@@ -1,0 +1,59 @@
+# =====================================================================
+#  SEPET TANIMI  --  hangi urunlerin fiyati takip edilecek
+# =====================================================================
+#
+#  Bicim:   grup adi | API ana kategorisi | aranacak kelimeler (virgulle)
+#
+#  * "grup adi"        raporda baslik olarak gorunur, istediginiz gibi yazin
+#  * "ana kategori"    API'nin kategori adi. YANLIS yazarsaniz o satir bos doner.
+#                      Bos birakirsaniz kategori filtresi uygulanmaz
+#                      (dikkat: o zaman "domates" arayinca SALCA da gelir).
+#  * "kelimeler"       her kelime icin ayri bir API istegi atilir.
+#                      Kelime sayisi arttikca cekim uzar (~2 sn/kelime).
+#
+#  ONEMLI: Kelimeleri TURKCE KARAKTERLE yazin. "uzum" ve "kivi" hic sonuc
+#  vermezken "üzüm" verir -- arama motoru harfleri birebir esliyor.
+#
+#  Kategori adindan emin degilseniz:   py topla.py --kesfet elma domates
+#  Bu komut o kelimelerin hangi kategorilerde gectigini yazar.
+#
+#  Satir basina # koyarsaniz o satir atlanir.
+# =====================================================================
+
+
+# --- MEYVE ------------------------------------------------------------
+Meyve | Meyve | elma, muz, portakal, mandalina, armut, üzüm, çilek, karpuz, kavun, şeftali, erik, kayısı, nar, kivi, limon, ayva, avokado
+
+# --- SEBZE ------------------------------------------------------------
+Sebze | Sebze | domates, salatalık, patates, soğan, biber, patlıcan, kabak, havuç, marul, ıspanak, brokoli, karnabahar, lahana, pırasa, maydanoz, sarımsak, mantar
+
+# --- YUMURTA ----------------------------------------------------------
+Yumurta | Yumurta | yumurta
+
+# --- UN ---------------------------------------------------------------
+Un | Un ve İrmik | un, irmik
+
+# --- BAKLIYAT ---------------------------------------------------------
+Bakliyat | Bakliyat | mercimek, nohut, fasulye, barbunya, bulgur, pirinç, börülce
+
+# --- KAHVALTILIK ------------------------------------------------------
+Reçel ve Bal | Bal ve Reçel | reçel, bal, marmelat
+Helva ve Tahin | Helva Tahin ve Pekmez | helva, tahin, pekmez
+Peynir | Peynir | beyaz peynir, kaşar, tulum peyniri, lor
+Zeytin | Zeytin | siyah zeytin, yeşil zeytin
+Tereyağı ve Margarin | Tereyağı ve Margarin | tereyağı, margarin
+
+# --- ZEYTINYAGI -------------------------------------------------------
+Zeytinyağı | Sıvı Yağlar | zeytinyağı, sızma zeytinyağı, natürel zeytinyağı, riviera zeytinyağı
+Diğer Sıvı Yağ | Sıvı Yağlar | ayçiçek yağı, mısırözü yağı
+
+# --- TEMIZLIK (hipoalerjenik adaylari) --------------------------------
+# Bu satirlar SADECE aday toplar. Hicbir temizlik urunu, siz
+# beyaz_liste.txt icinde onaylamadan raporda onerilmez.
+# Kelimeleri KISA tutun. "bulaşık deterjanı hassas" gibi uzun ifadeler
+# hic sonuc getirmiyor; arama motoru tam ifade esliyor.
+Çamaşır | Çamaşır Temizlik Ürünleri | çamaşır deterjanı, yumuşatıcı, hipoalerjenik, sensitive, bebek deterjanı
+Bulaşık | Bulaşık Temizlik Ürünleri | bulaşık deterjanı, bulaşık makinesi
+Genel Temizlik | Genel Temizlik Ürünleri | yüzey temizleyici, çamaşır suyu
+Sabun ve Duş | Duş Banyo ve Sabun | sabun, duş jeli
+Saç Bakım | Saç Bakım | şampuan, saç kremi

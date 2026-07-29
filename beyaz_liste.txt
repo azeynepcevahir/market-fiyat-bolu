@@ -1,0 +1,31 @@
+# =====================================================================
+#  ONAYLI TEMIZLIK / KISISEL BAKIM URUNLERI  (hipoalerjenik beyaz liste)
+# =====================================================================
+#
+#  Sistem, temizlik ve kisisel bakim kategorilerinde HICBIR urunu
+#  kendiliginden onermez. Sadece bu dosyada yazan urunler raporda
+#  karsilastirilir.
+#
+#  Sebebi: "hipoalerjenik" bilgisi API verisinde guvenilir degil.
+#  Bolu'da bu kelimenin gectigi sadece 3 urun var; gercekte uygun olan
+#  urunler "bebek", "sensitive", "parfumsuz", "dermatolojik" gibi farkli
+#  kelimelerle etiketli. Sistemin tahmin yurutmesi, size uygun olmayan
+#  bir urunu "daha ucuz" diye onermesi anlamina gelirdi. Onun yerine
+#  bir kez siz onayliyorsunuz, sonra fiyat takibi otomatik isliyor.
+#
+#  NASIL DOLDURULUR
+#  ----------------
+#  1) py topla.py calistirin
+#  2) olusan beyaz_liste_adaylari.txt dosyasini acin
+#  3) kullandiginiz / uygun buldugunuz urunlerin satirini kopyalayip
+#     asagiya yapistirin ("[ ]" isaretini silmeniz gerekmez)
+#  4) py rapor.py
+#
+#  Satirin sadece bastaki urun kimligi onemlidir, gerisi aciklamadir.
+#
+#  Ornek:
+#  0B11 | Omo Hipoalerjenik Sivi Bebek Deterjani 1.5 Lt | Omo | 1.5 LT
+#
+# =====================================================================
+
+# --- onayli urunler asagiya ---

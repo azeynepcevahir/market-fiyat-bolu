@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Uretilen dosyalar
+cikti/
+beyaz_liste_adaylari.txt
+_test-*.html
+
+# Kisisel -- baskasinin gormesine gerek yok
+listem.json
+favoriler.json
+
+# Fiyat veritabani.
+#
+# Varsayilan olarak DISARIDA. Sebep: her calistirmada yeniden uretiliyor ve
+# SQLite ikili bir dosya oldugu icin git'te her guncellemede tamami yeniden
+# yaziliyor; depo hizla sisiyor.
+#
+# Fiyat GECMISI tutmak istiyorsaniz (30 gunluk medyanla "simdi al / bekle"
+# sinyali gibi) asagidaki satiri basina # koyarak devre disi birakin.
+# O zaman depo buyur ama gecmis korunur.
+fiyatlar.db

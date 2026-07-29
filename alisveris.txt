@@ -1,0 +1,57 @@
+# =====================================================================
+#  ALISVERIS LISTESI  --  bu hafta alacaklariniz
+# =====================================================================
+#
+#  Her satir bir kalem. Yazdiginiz kelime, sepet.txt'te arattigimiz
+#  kelimelerden biri olmali (elma, domates, yumurta, un, mercimek...).
+#
+#  Cesit sabitlemek isterseniz ">" kullanin:
+#      elma > golden              sadece basliginda "golden" gecenler
+#      yumurta > 30               sadece 30'lu paketler
+#      un > !misir, !glutensiz    bunlarin gectikleri HARIC ("!" = istemiyorum)
+#      elma > golden, starking    ikisinden biri olsun
+#
+#  NEDEN GEREKLI: sistem en dusuk birim fiyati secer. Filtre koymazsaniz
+#  "yumurta" dediginizde bildircin yumurtasi, "un" dediginizde misir unu
+#  secilebilir -- birim fiyatlari daha dusuk oldugu icin.
+#
+#  Adet belirtmek isterseniz "x" kullanin:
+#      elma x2              iki kilo (fiyat ikiyle carpilir)
+#
+#  Bu dosya rapordaki "hangi urun hangi markette" dagitimini belirler.
+#  Karsilastirma tablosu ise sepet.txt'teki HER SEYI gosterir; bu dosya
+#  sadece market dagitimi optimizasyonu icin kullanilir.
+# =====================================================================
+
+# --- manav ---
+elma
+muz
+domates
+salatalik
+patates
+sogan
+havuc
+
+# --- kahvaltilik ---
+yumurta > !bildircin, !bıldırcın
+beyaz peynir
+zeytin
+recel
+# "tahin" aramasi helvalari da getiriyor, "tereyagi" aramasi margarini.
+# Basligin icinde su kelime GECSIN diyerek daraltiyoruz:
+tahin > tahin, !helva
+# "Sana Tereyag Lezzeti" gibi urunler tereyagi DEGIL, tereyagi aromali
+# margarin. En saglami kullandiginiz markayi yazmaktir:  tereyagi > sek
+tereyagi > tereyag, !margarin, !lezzeti, !bitkisel, !karisim
+
+# --- yag ---
+# "sizma" yazarak sadece naturel sizma olanlari secebilirsiniz:
+#     zeytinyagi > sizma
+zeytinyagi > !aycicek, !ayçiçek, !misir, !mısır, !kanola
+
+# --- temel gida ---
+un > !misir, !mısır, !glutensiz, !kek, !kepek, !galeta, !irmik, !nisasta, !nişasta
+mercimek
+pirinc
+nohut
+bulgur

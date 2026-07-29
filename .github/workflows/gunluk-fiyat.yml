@@ -1,0 +1,55 @@
+name: Günlük fiyat çekimi
+
+# Marketler fiyatlarını her sabah ~09:25'te (TRT) güncelliyor.
+# Biz 10:00 TRT = 07:00 UTC'de çekiyoruz ki taze veriyi yakalayalım.
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:        # Actions sekmesinden elle de çalıştırılabilir
+
+# Üretilen sayfayı depoya geri yazabilmek için
+permissions:
+  contents: write
+
+concurrency:
+  group: fiyat-cekimi
+  cancel-in-progress: false
+
+jobs:
+  cek:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # marketfiyati.org.tr yurt dışı IP'leri engelliyorsa iş burada patlar.
+      # Hata mesajı loglarda net görünür; engelleme varsa Actions yerine
+      # kendi bilgisayarınızdan çekmeye devam edersiniz.
+      - name: Fiyatları çek
+        run: python topla.py
+
+      - name: Alışveriş sayfasını üret
+        run: python katalog.py
+
+      - name: Sayfayı yayına kopyala
+        run: |
+          mkdir -p docs
+          cp cikti/Market-Sepet.html docs/index.html
+          cp cikti/Alisveris-Listesi.html docs/liste.html 2>/dev/null || true
+
+      - name: Değişiklikleri işle
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs
+          if git diff --staged --quiet; then
+            echo "Fiyatlarda değişiklik yok."
+          else
+            git commit -m "Fiyat güncellemesi $(date -u +'%Y-%m-%d')"
+            git push
+          fi
