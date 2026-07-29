@@ -1,59 +1,98 @@
 # =====================================================================
-#  SEPET TANIMI  --  hangi urunlerin fiyati takip edilecek
+#  SEPET TANIMI  --  her gun taze cekilecek urunler
 # =====================================================================
 #
 #  Bicim:   grup adi | API ana kategorisi | aranacak kelimeler (virgulle)
 #
 #  * "grup adi"        raporda baslik olarak gorunur, istediginiz gibi yazin
-#  * "ana kategori"    API'nin kategori adi. YANLIS yazarsaniz o satir bos doner.
-#                      Bos birakirsaniz kategori filtresi uygulanmaz
-#                      (dikkat: o zaman "domates" arayinca SALCA da gelir).
-#  * "kelimeler"       her kelime icin ayri bir API istegi atilir.
-#                      Kelime sayisi arttikca cekim uzar (~2 sn/kelime).
+#  * "ana kategori"    API'nin kategori adi. YANLIS yazarsaniz o satir bos doner
+#                      ve topla.py sonunda sizi uyarir.
+#  * "kelimeler"       her kelime icin ayri bir API istegi atilir (~2 sn).
 #
-#  ONEMLI: Kelimeleri TURKCE KARAKTERLE yazin. "uzum" ve "kivi" hic sonuc
-#  vermezken "üzüm" verir -- arama motoru harfleri birebir esliyor.
+#  ONEMLI: Kelimeleri TURKCE KARAKTERLE yazin. "uzum" hic sonuc vermezken
+#  "üzüm" verir -- arama motoru harfleri birebir esliyor.
+#
+#  Asagidaki kelimeler tahmin degil: tam katalog taramasinin verisinden,
+#  "hangi kelime bu kategoride kac urun getirdi" olculerek secildi.
 #
 #  Kategori adindan emin degilseniz:   py topla.py --kesfet elma domates
-#  Bu komut o kelimelerin hangi kategorilerde gectigini yazar.
-#
 #  Satir basina # koyarsaniz o satir atlanir.
 # =====================================================================
 
 
-# --- MEYVE ------------------------------------------------------------
+# --- MANAV -----------------------------------------------------------
 Meyve | Meyve | elma, muz, portakal, mandalina, armut, üzüm, çilek, karpuz, kavun, şeftali, erik, kayısı, nar, kivi, limon, ayva, avokado
-
-# --- SEBZE ------------------------------------------------------------
 Sebze | Sebze | domates, salatalık, patates, soğan, biber, patlıcan, kabak, havuç, marul, ıspanak, brokoli, karnabahar, lahana, pırasa, maydanoz, sarımsak, mantar
 
-# --- YUMURTA ----------------------------------------------------------
+# --- TEMEL GIDA ------------------------------------------------------
 Yumurta | Yumurta | yumurta
-
-# --- UN ---------------------------------------------------------------
 Un | Un ve İrmik | un, irmik
+Bakliyat | Bakliyat | bakliyat, mercimek, nohut, fasulye, barbunya, bulgur, pirinç, börülce
+Makarna | Mantı Makarna ve Erişte | makarna, erişte, mantı
+Sıvı Yağ | Sıvı Yağlar | zeytinyağı, sızma zeytinyağı, natürel zeytinyağı, riviera zeytinyağı, ayçiçek yağı, mısırözü yağı
+Salça ve Konserve | Salça | salça, konserve
+Baharat | Tuz Baharat ve Harçlar | tuz, baharat, harç
+Sos ve Sirke | Ketçap Mayonez Sos ve Sirkeler | sos, sirke, ketçap, mayonez
 
-# --- BAKLIYAT ---------------------------------------------------------
-Bakliyat | Bakliyat | mercimek, nohut, fasulye, barbunya, bulgur, pirinç, börülce
-
-# --- KAHVALTILIK ------------------------------------------------------
-Reçel ve Bal | Bal ve Reçel | reçel, bal, marmelat
-Helva ve Tahin | Helva Tahin ve Pekmez | helva, tahin, pekmez
-Peynir | Peynir | beyaz peynir, kaşar, tulum peyniri, lor
-Zeytin | Zeytin | siyah zeytin, yeşil zeytin
+# --- SUT VE SUT URUNLERI ---------------------------------------------
+Süt | Süt | süt, laktozsuz süt
+Yoğurt ve Ayran | Yoğurt | yoğurt, ayran, kefir
+Peynir | Peynir | peynir, beyaz peynir, kaşar, tulum peyniri, lor
 Tereyağı ve Margarin | Tereyağı ve Margarin | tereyağı, margarin
+Krema | Diğer Süt Ürünleri | krema, kaymak
 
-# --- ZEYTINYAGI -------------------------------------------------------
-Zeytinyağı | Sıvı Yağlar | zeytinyağı, sızma zeytinyağı, natürel zeytinyağı, riviera zeytinyağı
-Diğer Sıvı Yağ | Sıvı Yağlar | ayçiçek yağı, mısırözü yağı
+# --- ET, TAVUK, BALIK ------------------------------------------------
+Beyaz Et | Beyaz Et | tavuk, but, kanat, göğüs
+Kırmızı Et | Kırmızı Et | et, kıyma, kuşbaşı, biftek
+Deniz Ürünleri | Deniz Ürünleri | balık, hamsi, somon, ton balığı
+Şarküteri | Şarküteri | sucuk, salam, sosis, pastırma, jambon
 
-# --- TEMIZLIK (hipoalerjenik adaylari) --------------------------------
-# Bu satirlar SADECE aday toplar. Hicbir temizlik urunu, siz
-# beyaz_liste.txt icinde onaylamadan raporda onerilmez.
-# Kelimeleri KISA tutun. "bulaşık deterjanı hassas" gibi uzun ifadeler
-# hic sonuc getirmiyor; arama motoru tam ifade esliyor.
-Çamaşır | Çamaşır Temizlik Ürünleri | çamaşır deterjanı, yumuşatıcı, hipoalerjenik, sensitive, bebek deterjanı
+# --- KAHVALTILIK -----------------------------------------------------
+Reçel ve Bal | Bal ve Reçel | reçel, bal, marmelat
+Helva ve Tahin | Helva Tahin ve Pekmez | tahin, pekmez, helva
+Zeytin | Zeytin | zeytin, siyah zeytin, yeşil zeytin
+Kahvaltılık Sos | Sürülebilir Ürünler ve Kahvaltılık Soslar | kahvaltılık, sürülebilir, fındık kreması
+Gevrek ve Granola | Kahvaltılık Gevrek Bar ve Granola | kahvaltılık, granola, gevrek, müsli
+Ekmek | Ekmek ve Unlu Mamüller | ekmek, lavaş, bazlama, tost ekmeği
+
+# --- ICECEK ----------------------------------------------------------
+Çay | Çay ve Bitki Çayları | çay, bitki çayı, yeşil çay
+Kahve | Kahve | kahve, türk kahvesi, granül kahve
+Meyve Suyu | Meyve Suyu | meyve suyu, nektar
+Maden Suyu | Maden Suyu | maden suyu, soda
+Su | Su | su, damacana
+Gazlı İçecek | Gazsız İçecekler | gazoz, kola, soğuk çay
+
+# --- ATISTIRMALIK ----------------------------------------------------
+Bisküvi | Bisküvi ve Kraker | bisküvi, kraker
+Çikolata | Çikolata | çikolata
+Gofret | Gofret | gofret
+Cips | Cips | cips
+Kek | Kek | kek
+Kuruyemiş | Kuruyemiş ve Kuru Meyve | kuruyemiş, fındık, ceviz, badem, leblebi
+Şekerleme | Sakız ve Şekerleme | sakız, şekerleme, lokum
+Dondurma | Dondurmalar | dondurma
+
+# --- HAZIR -----------------------------------------------------------
+Hazır Yemek | Hazır Yemekler | hazır yemek, çorba, hazır çorba
+Hazır Gıda Karışımları | Hazır Gıda Karışımları | hazır karışım, kek karışımı, puding
+
+# --- TEMIZLIK --------------------------------------------------------
+Çamaşır | Çamaşır Temizlik Ürünleri | çamaşır deterjanı, deterjan, yumuşatıcı, leke çıkarıcı
 Bulaşık | Bulaşık Temizlik Ürünleri | bulaşık deterjanı, bulaşık makinesi
-Genel Temizlik | Genel Temizlik Ürünleri | yüzey temizleyici, çamaşır suyu
+Genel Temizlik | Genel Temizlik Ürünleri | yüzey temizleyici, çamaşır suyu, temizlik
+Tuvalet Kağıdı | Tuvalet Kağıtları | tuvalet kağıdı
+Kağıt Havlu | Kağıt Havlu | havlu kağıt
+Peçete ve Mendil | Kağıt Peçete ve Mendiller | peçete, mendil
+Islak Mendil | Islak Mendiller | ıslak mendil
+
+# --- KISISEL BAKIM ---------------------------------------------------
 Sabun ve Duş | Duş Banyo ve Sabun | sabun, duş jeli
 Saç Bakım | Saç Bakım | şampuan, saç kremi
+Ağız Bakım | Ağız Bakım | diş macunu, diş fırçası, ağız bakım
+Deodorant | Parfüm ve Deodorant | deodorant, parfüm
+Tıraş Ürünleri | Tıraş Ürünleri | tıraş, jilet, tıraş köpüğü
+
+# --- BEBEK -----------------------------------------------------------
+Bebek Bezi | Bebek ve Hasta Bezi | bebek bezi, bez
+Bebek Maması | Bebek Mamaları | mama, bebek maması, devam sütü

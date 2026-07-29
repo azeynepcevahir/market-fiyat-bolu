@@ -7,7 +7,6 @@ on:
     - cron: "0 7 * * *"
   workflow_dispatch:        # Actions sekmesinden elle de çalıştırılabilir
 
-# Üretilen sayfayı depoya geri yazabilmek için
 permissions:
   contents: write
 
@@ -18,7 +17,7 @@ concurrency:
 jobs:
   cek:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v4
@@ -27,11 +26,37 @@ jobs:
         with:
           python-version: "3.12"
 
-      # marketfiyati.org.tr yurt dışı IP'leri engelliyorsa iş burada patlar.
-      # Hata mesajı loglarda net görünür; engelleme varsa Actions yerine
-      # kendi bilgisayarınızdan çekmeye devam edersiniz.
-      - name: Fiyatları çek
+      # Veritabanini calistirmalar arasinda saklar.
+      #
+      # Bu olmadan her calistirma sifir katalogla baslardi ve 13 bin urunu
+      # her gun bastan taramak saatler surerdi. Onbellekle katalog BIRIKIR:
+      # her gun sepet taze cekilir, ustune tam taramanin bir parcasi eklenir,
+      # birkac gun icinde katalogun tamami olusur ve orada kalir.
+      #
+      # Anahtar her calistirmada degisir, restore-keys en son kaydi geri
+      # yukler -- boylece kayit uzerine yazilir, eskiler dusmez.
+      - name: Veritabanını geri yükle
+        uses: actions/cache@v4
+        with:
+          path: fiyatlar.db
+          key: fiyatlar-db-${{ github.run_id }}
+          restore-keys: |
+            fiyatlar-db-
+
+      # 1) Sepetteki urunler HER GUN taze cekilir.
+      - name: Sepeti çek
         run: python topla.py
+
+      # 2) Tam katalog taramasi kaldigi yerden bir miktar ilerletilir.
+      #    Pazar gunleri kuyruk sifirlanir ki uzun kuyruk da tazelensin.
+      - name: Katalog taramasını sürdür
+        run: |
+          if [ "$(date -u +%u)" = "7" ]; then
+            echo "Pazar -- tarama kuyruğu sıfırlanıyor"
+            python topla.py --hepsi --sifirla --sinir 300
+          else
+            python topla.py --hepsi --sinir 300
+          fi
 
       - name: Alışveriş sayfasını üret
         run: python katalog.py
@@ -40,7 +65,6 @@ jobs:
         run: |
           mkdir -p docs
           cp cikti/Market-Sepet.html docs/index.html
-          cp cikti/Alisveris-Listesi.html docs/liste.html 2>/dev/null || true
 
       - name: Değişiklikleri işle
         run: |
