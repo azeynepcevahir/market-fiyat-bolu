@@ -99,6 +99,7 @@ def veriyi_hazirla() -> dict:
         kayit = urunler.get(t["urun_id"])
         if kayit is None:
             kayit = urunler[t["urun_id"]] = {
+                "urun_id": t["urun_id"],
                 "baslik": t["baslik"],
                 "marka": t["marka"] or "",
                 "gramaj": t["gramaj_ham"] or "",
@@ -135,6 +136,7 @@ def veriyi_hazirla() -> dict:
             teklif_listesi,
             boy_coz(kayit["baslik"]),
             nitelik_coz(kayit["baslik"]),
+            kayit["urun_id"],   # sunucuya favori bildirirken gerekiyor
         ])
 
     # Cok markette bulunanlar aramada one ciksin
@@ -214,6 +216,14 @@ button.yildiz.dolu{color:#f0a500}
 .ayar{display:flex;gap:10px;align-items:center;font-size:13px;color:#5a6472;margin-top:10px;
      flex-wrap:wrap}
 .dip{text-align:center;font-size:11px;color:#8b93a0;padding:18px 12px 4px}
+.kucuk{font-size:12px;color:#5a6472;line-height:1.5}
+.birincil{background:#14181f;color:#fff;border:none;border-radius:9px;padding:12px;
+     font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;margin-top:10px}
+.birincil:disabled{background:#aeb6c0;cursor:not-allowed}
+#cekLog{background:#14181f;color:#c8d3e0;font-size:11px;line-height:1.45;padding:10px;
+     border-radius:8px;max-height:260px;overflow:auto;margin:12px 0 0;white-space:pre-wrap;
+     font-family:Consolas,monospace}
+#cekLog:empty{display:none}
 @media print{.sekmeler,.altbar,header{display:none}.sayfa{display:block!important}
      body{padding:0;background:#fff}#sayfa-ara,#sayfa-firsat{display:none!important}}
 </style></head><body>
@@ -229,6 +239,7 @@ button.yildiz.dolu{color:#f0a500}
   <button data-s="sepet">Sepet (<span id="rozetSayi">0</span>)</button>
   <button data-s="sonuc">Sonuç</button>
   <button data-s="firsat">Fırsat</button>
+  <button data-s="guncelle" id="sekmeGuncelle" style="display:none">⟳ Güncelle</button>
 </div>
 
 <div class="sayfa etkin" id="sayfa-ara">
@@ -291,6 +302,21 @@ Yumurta gibi her marketin kendi markasını sattığı ürünlerde bu olmadan ka
     farklı çeşit veya veri hatası olabilir.
   </div>
   <div id="firsatListe"></div>
+</div>
+
+<div class="sayfa" id="sayfa-guncelle">
+  <div class="kart" style="padding:14px">
+    <h3 style="margin:0 0 8px;font-size:15px">Fiyatları güncelle</h3>
+    <div class="kucuk">
+      Marketlerden güncel fiyatları çeker. Bitince bu sayfa ve telefonunuzdaki
+      kopya birlikte yenilenir. Çekim sürerken arama ve sepet çalışmaya devam eder.
+    </div>
+    <button class="birincil" id="cekFavori">★ Sadece favorilerimi güncelle</button>
+    <div class="kucuk" id="favBilgi" style="margin:4px 0 10px"></div>
+    <button class="birincil" id="cekHepsi" style="background:#3a4250">
+      Tüm sepeti çek (13–15 dk)</button>
+    <pre id="cekLog"></pre>
+  </div>
 </div>
 
 <div class="altbar">
@@ -542,6 +568,7 @@ function bagla(kapsayici) {
 function favKaydet() {
   localStorage.setItem("marketFavori", JSON.stringify(favori));
   el("#favSayi").textContent = favori.length;
+  favSunucuyaBildir();
 }
 
 function cizFavoriler() {
@@ -826,22 +853,130 @@ function cizFirsatlar() {
   bagla(el("#firsatListe"));
 }
 
+/* ---------- sunucu modu ----------
+   Ayni dosya iki sekilde acilabiliyor:
+     * file:// ile dogrudan (telefon, cevrimdisi) -> arkasinda program yok,
+       fiyat cekilemez, guncelleme sekmesi gizli kalir
+     * py uygulama.py ile sunucudan -> asagidaki yoklama tutar ve
+       guncelleme sekmesi belirir
+   Boylece tek bir arayuz var, iki ayri sayfa degil.                        */
+
+let sunucuVar = false;
+let cekZaman = null;
+
+async function sunucuYokla() {
+  try {
+    const c = await fetch("/api/durum", {cache: "no-store"});
+    if (!c.ok) return;
+    const d = await c.json();
+    sunucuVar = true;
+    el("#sekmeGuncelle").style.display = "";
+    if (d.damga) {
+      el("#ust").textContent += ` · marketlerin son güncellemesi ${d.damga}`;
+    }
+    await favSunucuyaBildir();
+    const i = await (await fetch("/api/cekim")).json();
+    if (i.calisiyor) { document.querySelector('[data-s="guncelle"]').click(); cekIzle(); }
+  } catch (e) {
+    sunucuVar = false;   // file:// ile acilmis, normal durum
+  }
+}
+
+async function favSunucuyaBildir() {
+  if (!sunucuVar) return;
+  const kimlikler = favori.map((i) => U[i][9]).filter(Boolean);
+  el("#favBilgi").textContent = kimlikler.length
+    ? `${kimlikler.length} favori ürün — güncelleme bunlarla sınırlı olacak.`
+    : "Henüz favori yok. “Ara” sekmesinde ☆ işaretine dokunun.";
+  try {
+    await fetch("/api/favori", {method: "POST", headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify(kimlikler)});
+  } catch (e) { /* sunucu kapanmis olabilir */ }
+}
+
+async function cekBaslat(kapsam, onay) {
+  if (!confirm(onay)) return;
+  el("#cekHepsi").disabled = el("#cekFavori").disabled = true;
+  try {
+    const r = await (await fetch("/api/cekim", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({kapsam: kapsam})
+    })).json();
+    if (r.hata) { alert(r.hata); el("#cekHepsi").disabled = el("#cekFavori").disabled = false; return; }
+  } catch (e) {
+    alert("Sunucuya ulaşılamadı. py uygulama.py çalışıyor mu?");
+    el("#cekHepsi").disabled = el("#cekFavori").disabled = false;
+    return;
+  }
+  cekIzle();
+}
+
+async function cekIzle() {
+  let d;
+  try { d = await (await fetch("/api/cekim")).json(); } catch (e) { return; }
+
+  const log = el("#cekLog");
+  log.textContent = (d.satirlar || []).join("\n");
+  log.scrollTop = log.scrollHeight;
+
+  if (d.calisiyor) {
+    el("#cekHepsi").disabled = el("#cekFavori").disabled = true;
+    el("#cekHepsi").textContent = `Çekiliyor… (${d.toplam_satir} satır)`;
+    clearTimeout(cekZaman);
+    cekZaman = setTimeout(cekIzle, 2000);
+    return;
+  }
+
+  el("#cekHepsi").disabled = el("#cekFavori").disabled = false;
+  el("#cekHepsi").textContent = "Tüm sepeti çek (13–15 dk)";
+  if (d.bitti && !d.hata) {
+    log.textContent += "\n\nBitti. Yeni fiyatlar için sayfayı yenileyin (F5).";
+  }
+}
+
+el("#cekHepsi").onclick = () => cekBaslat("hepsi",
+  "Tüm sepet çekilecek, 13–15 dakika sürer. Başlatılsın mı?");
+
+el("#cekFavori").onclick = () => {
+  if (!favori.length) {
+    alert("Henüz favoriniz yok. “Ara” sekmesinde ürünün solundaki ☆ işaretine dokunun.");
+    return;
+  }
+  cekBaslat("favori",
+    `${favori.length} favori ürünün fiyatı güncellenecek. Genellikle 1–3 dakika sürer. Başlatılsın mı?`);
+};
+
 kaydet();
 favKaydet();
+sunucuYokla();
 </script></body></html>"""
 
 
-def uret() -> None:
-    veri = veriyi_hazirla()
+def sayfa_html(veri: dict | None = None) -> str | None:
+    """
+    Tam sayfayi (veri gomulu) metin olarak uretir.
+
+    Hem dosyaya yazmak icin hem de uygulama.py'nin sunmasi icin kullanilir --
+    boylece tek bir arayuz var, iki ayri kopya degil. Sayfa acildiginda
+    /api/durum'u yoklayip sunucudan mi yoksa dosyadan mi acildigini anlar,
+    guncelleme sekmesini ona gore gosterir.
+    """
+    veri = veri or veriyi_hazirla()
     if not veri:
-        yaz("Veritabaninda fiyat yok. Once calistirin:  py topla.py")
-        return
+        return None
 
     gomulu = json.dumps(veri, ensure_ascii=False, separators=(",", ":"))
     # </script> dizisi gomulu JSON icinde gecerse sayfayi bozar
     gomulu = gomulu.replace("</", "<\\/")
+    return SAYFA.replace("__VERI__", gomulu)
 
-    icerik = SAYFA.replace("__VERI__", gomulu)
+
+def uret() -> None:
+    veri = veriyi_hazirla()
+    icerik = sayfa_html(veri)
+    if icerik is None:
+        yaz("Veritabaninda fiyat yok. Once calistirin:  py topla.py")
+        return
 
     klasor = rapor.cikti_yolu().parent
     yol = klasor / "Market-Sepet.html"
