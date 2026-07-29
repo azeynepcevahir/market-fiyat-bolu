@@ -341,6 +341,20 @@ CREATE TABLE IF NOT EXISTS tarama (
     urun_sayisi INTEGER
 );
 
+-- Elle girilen fiyatlar (File, Ozdilek gibi API'de olmayan marketler).
+--
+-- Ayri tabloda tutuluyor cunku gunluk cekim 'fiyat' tablosunu tarihe gore
+-- yeniler; elle girilen fiyat oradaysa ertesi gun kaybolurdu. Burada
+-- urun+market basina TEK kayit durur ve her raporda tasinir. 'tarih'
+-- kacinci gun girildigini soyler, boylece eskiyen fiyatlar isaretlenebilir.
+CREATE TABLE IF NOT EXISTS elle_fiyat (
+    urun_id TEXT NOT NULL,
+    market  TEXT NOT NULL,
+    fiyat   REAL NOT NULL,
+    tarih   TEXT NOT NULL,
+    PRIMARY KEY (urun_id, market)
+);
+
 CREATE INDEX IF NOT EXISTS idx_kelime ON urun_kelime (kelime);
 CREATE INDEX IF NOT EXISTS idx_fiyat_tarih ON fiyat (tarih);
 CREATE INDEX IF NOT EXISTS idx_fiyat_urun  ON fiyat (urun_id);
@@ -497,16 +511,23 @@ def beyaz_liste_oku(yol: Path = BEYAZ_LISTE_YOLU) -> set[str]:
     return onayli
 
 
-def beyaz_liste_gerekir(ana_kategori: str | None) -> bool:
-    """
-    Bu kategorideki urunler, kullanici acikca onaylamadan ONERILMEZ.
+# Temizlik / kisisel bakim urunleri icin onay listesi.
+#
+# Kapali (False): butun urunler digerleri gibi listelenir.
+# Acik  (True) : sadece beyaz_liste.txt'te onayladiginiz urunler gorunur.
+#
+# Bu ozellik hipoalerjenik urunler icin eklenmisti: "hipoalerjenik" bilgisi
+# API verisinde guvenilir degil (Bolu'da bu kelimenin gectigi sadece 3 urun
+# var; gercekte uygun olanlar "bebek", "sensitive", "parfumsuz" gibi farkli
+# kelimelerle etiketli). Kullanici istegi uzerine kapatildi -- artik temizlik
+# urunleri de listeleniyor, uygunlugunu etiketten kendiniz kontrol edersiniz.
+BEYAZ_LISTE_ZORUNLU = False
 
-    Hipoalerjenik olup olmadigi API verisinden guvenilir sekilde
-    anlasilamiyor (Bolu'da "hipoalerjenik" gecen sadece 3 urun var,
-    gercek uygun urunler "bebek", "sensitive", "parfumsuz" gibi farkli
-    kelimelerle etiketli). Yanlis oneri saglik meselesi oldugu icin
-    sistem burada asla tahmin yurutmez.
-    """
+
+def beyaz_liste_gerekir(ana_kategori: str | None) -> bool:
+    """Bu kategorideki urunler onay listesine tabi mi?"""
+    if not BEYAZ_LISTE_ZORUNLU:
+        return False
     metin = sadelestir(ana_kategori or "")
     return any(ipucu in metin for ipucu in
                ("temizlik", "bakim", "sabun", "banyo", "deterjan", "hijyen"))
@@ -524,6 +545,175 @@ HASSAS_IPUCLARI = (
 def hassas_ipucu_var(baslik: str) -> bool:
     metin = sadelestir(baslik or "")
     return any(ipucu in metin for ipucu in HASSAS_IPUCLARI)
+
+
+ELLE_MARKET_YOLU = PROJE / "elle_marketler.txt"
+
+# Dosya yoksa ya da bozuksa kullanilacak varsayilanlar
+_ELLE_VARSAYILAN = {
+    "file": "File", "ozdilek": "Özdilek",
+    "nuhmar": "Nuhmar", "basgimpa": "Başgimpa", "diger": "Diğer",
+}
+
+
+def elle_marketleri_oku(yol: Path = ELLE_MARKET_YOLU) -> dict[str, str]:
+    """
+    marketfiyati'de olmayan, fiyati elle girilen marketlerin listesi.
+    Kullanici dosyadan duzenleyebilsin diye sabit kodlanmadi.
+    """
+    if not yol.exists():
+        return dict(_ELLE_VARSAYILAN)
+
+    marketler: dict[str, str] = {}
+    for satir in yol.read_text(encoding="utf-8").splitlines():
+        satir = satir.strip()
+        if not satir or satir.startswith("#") or "|" not in satir:
+            continue
+        kod, _, ad = satir.partition("|")
+        kod, ad = kod.strip().lower(), ad.strip()
+        if kod and ad:
+            marketler[kod] = ad
+    return marketler or dict(_ELLE_VARSAYILAN)
+
+
+# Geriye donuk uyumluluk icin: modul yuklenirken bir kez okunur
+ELLE_MARKETLER = elle_marketleri_oku()
+
+
+def elle_urun_ekle(baglanti: sqlite3.Connection, baslik: str, marka: str,
+                   gramaj: str, grup: str = "Elle eklenen") -> str:
+    """
+    Katalogda olmayan bir urunu (orn. File'a ozel marka) sisteme tanitir.
+    Gramaj, API'den gelen urunlerle ayni ayristiriciyla cozulur ki
+    karsilastirma kurallari birebir ayni sekilde islesin.
+    """
+    baslik = (baslik or "").strip()
+    if not baslik:
+        raise ValueError("Ürün adı boş olamaz")
+
+    marka = (marka or "").strip()
+    gramaj = (gramaj or "").strip()
+
+    cozum = coz_miktar(baslik, gramaj or None, grup)
+    miktar, birim = cozum if cozum else (None, None)
+
+    # Ayni urunu iki kez eklemeyi onlemek icin icerikten turetilen kimlik
+    imza = f"{kucult(marka)}|{isim_belirteci(baslik, marka)}|{miktar}|{birim}"
+    urun_id = "elle-" + str(abs(hash(imza)) % (10 ** 10))
+
+    baglanti.execute(
+        "INSERT OR REPLACE INTO urun (urun_id, baslik, marka, ana_kategori, "
+        "gramaj_ham, miktar, birim, isim_anahtari, arama_kelimesi, grup) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (urun_id, baslik, marka or None, grup, gramaj or None, miktar, birim,
+         isim_belirteci(baslik, marka), kucult(baslik).split()[0] if baslik else "", grup),
+    )
+    baglanti.commit()
+    return urun_id
+
+
+def elle_fiyat_yaz(baglanti: sqlite3.Connection, urun_id: str, market: str,
+                   fiyat: float, tarih: str | None = None) -> None:
+    baglanti.execute(
+        "INSERT OR REPLACE INTO elle_fiyat (urun_id, market, fiyat, tarih) "
+        "VALUES (?, ?, ?, ?)",
+        (urun_id, market, float(fiyat), tarih or date.today().isoformat()),
+    )
+    baglanti.commit()
+
+
+ELLE_YEDEK_YOLU = PROJE / "elle_fiyatlar.json"
+
+
+def elle_disa_aktar(baglanti: sqlite3.Connection) -> int:
+    """
+    Elle girilen fiyatlari depoya girebilen bir dosyaya yazar.
+
+    Veritabani (.gitignore'da) GitHub'a gitmiyor ve Actions her calistiginda
+    sifirdan basliyor. Bu dosya olmasa elle girdiginiz File/Ozdilek fiyatlari
+    yayindaki sayfada gorunmezdi. Kucuk bir JSON oldugu icin depoyu sismez.
+    """
+    satirlar = baglanti.execute(
+        """
+        SELECT e.urun_id, e.market, e.fiyat, e.tarih,
+               u.baslik, u.marka, u.gramaj_ham, u.grup
+        FROM elle_fiyat e JOIN urun u ON u.urun_id = e.urun_id
+        ORDER BY e.urun_id, e.market
+        """
+    ).fetchall()
+
+    kayitlar = [{
+        "urun_id": s["urun_id"], "market": s["market"], "fiyat": s["fiyat"],
+        "tarih": s["tarih"], "baslik": s["baslik"], "marka": s["marka"] or "",
+        "gramaj": s["gramaj_ham"] or "", "grup": s["grup"] or "",
+    } for s in satirlar]
+
+    ELLE_YEDEK_YOLU.write_text(
+        json.dumps(kayitlar, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    return len(kayitlar)
+
+
+def elle_ice_aktar(baglanti: sqlite3.Connection) -> int:
+    """
+    elle_fiyatlar.json'daki kayitlari veritabanina yazar.
+
+    Katalogda olmayan urunler (File'a ozel markalar) burada yeniden
+    olusturulur; boylece bos bir veritabaniyla baslayan GitHub Actions
+    calistirmasi da elle girilen fiyatlari icerir.
+    """
+    if not ELLE_YEDEK_YOLU.exists():
+        return 0
+    try:
+        kayitlar = json.loads(ELLE_YEDEK_YOLU.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return 0
+    if not isinstance(kayitlar, list):
+        return 0
+
+    sayi = 0
+    for k in kayitlar:
+        urun_id = k.get("urun_id")
+        if not urun_id or k.get("fiyat") is None:
+            continue
+
+        var = baglanti.execute(
+            "SELECT 1 FROM urun WHERE urun_id = ?", (urun_id,)
+        ).fetchone()
+        if not var:
+            # Sadece elle eklenmis urun -- tanimini yedekten geri kur
+            baslik = k.get("baslik") or urun_id
+            marka = k.get("marka") or ""
+            gramaj = k.get("gramaj") or ""
+            grup = k.get("grup") or "Elle eklenen"
+            cozum = coz_miktar(baslik, gramaj or None, grup)
+            miktar, birim = cozum if cozum else (None, None)
+            baglanti.execute(
+                "INSERT OR REPLACE INTO urun (urun_id, baslik, marka, ana_kategori, "
+                "gramaj_ham, miktar, birim, isim_anahtari, arama_kelimesi, grup) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (urun_id, baslik, marka or None, grup, gramaj or None, miktar, birim,
+                 isim_belirteci(baslik, marka),
+                 kucult(baslik).split()[0] if baslik else "", grup),
+            )
+
+        baglanti.execute(
+            "INSERT OR REPLACE INTO elle_fiyat (urun_id, market, fiyat, tarih) "
+            "VALUES (?, ?, ?, ?)",
+            (urun_id, k.get("market") or "diger", float(k["fiyat"]),
+             k.get("tarih") or date.today().isoformat()),
+        )
+        sayi += 1
+
+    baglanti.commit()
+    return sayi
+
+
+def elle_fiyat_sil(baglanti: sqlite3.Connection, urun_id: str, market: str) -> None:
+    baglanti.execute(
+        "DELETE FROM elle_fiyat WHERE urun_id = ? AND market = ?", (urun_id, market)
+    )
+    baglanti.commit()
 
 
 def onedrive_koku() -> Path | None:

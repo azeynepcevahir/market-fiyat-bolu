@@ -1,0 +1,23 @@
+# =====================================================================
+#  ELLE FIYAT GIRILEN MARKETLER
+# =====================================================================
+#
+#  marketfiyati.org.tr'de olmayan marketler. Bu listedekiler, elle fiyat
+#  girme ekranindaki acilir menude cikar.
+#
+#  Bicim:   kod | Gorunen ad
+#
+#  * "kod"        kucuk harf, bosluksuz, Turkce karaktersiz olmali.
+#                 Veritabaninda bu isimle saklanir, sonradan DEGISTIRMEYIN
+#                 (degistirirseniz o marketin eski fiyatlari kopuk kalir).
+#  * "Gorunen ad" ekranda ve raporda gorunen isim. Istediginiz gibi yazin.
+#
+#  Yeni market eklemek icin alta bir satir yazip kaydedin, sonra
+#  Baslat.bat'i kapatip tekrar acin.
+# =====================================================================
+
+file      | File
+ozdilek   | Özdilek
+nuhmar    | Nuhmar
+basgimpa  | Başgimpa
+diger     | Diğer

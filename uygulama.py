@@ -26,6 +26,7 @@ import json
 import sys
 import threading
 import webbrowser
+from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
@@ -86,6 +87,100 @@ def favori_yaz(kimlikler: list[str]) -> None:
     FAVORI_YOLU.write_text(
         json.dumps(kimlikler, ensure_ascii=False, indent=1), encoding="utf-8"
     )
+
+
+# ---------------------------------------------------------------------------
+# Elle fiyat girisi (File, Ozdilek gibi API'de olmayan marketler)
+# ---------------------------------------------------------------------------
+
+def elle_listele() -> list[dict]:
+    baglanti = market.veritabani()
+    try:
+        market.elle_ice_aktar(baglanti)
+        satirlar = baglanti.execute(
+            """
+            SELECT e.urun_id, e.market, e.fiyat, e.tarih,
+                   u.baslik, u.gramaj_ham, u.miktar, u.birim
+            FROM elle_fiyat e JOIN urun u ON u.urun_id = e.urun_id
+            ORDER BY e.tarih DESC, u.baslik
+            """
+        ).fetchall()
+        bugun = date.today()
+        cikti = []
+        for s in satirlar:
+            try:
+                yas = (bugun - date.fromisoformat(s["tarih"])).days
+            except ValueError:
+                yas = 0
+            cikti.append({
+                "urun_id": s["urun_id"], "market": s["market"],
+                "market_adi": rapor.market_adi(s["market"]),
+                "fiyat": s["fiyat"], "tarih": s["tarih"], "yas_gun": yas,
+                "baslik": s["baslik"], "gramaj": s["gramaj_ham"],
+                "birim_fiyat": (s["fiyat"] / s["miktar"]) if s["miktar"] else None,
+                "birim": s["birim"],
+            })
+        return cikti
+    finally:
+        baglanti.close()
+
+
+def elle_kaydet(veri: dict) -> dict:
+    """
+    Iki kullanim:
+      * urun_id verilirse  -> katalogdaki urune fiyat eklenir
+      * baslik verilirse   -> katalogda olmayan urun once tanimlanir
+    """
+    market_kodu = (veri.get("market") or "file").strip().lower()
+    if market_kodu not in market.ELLE_MARKETLER:
+        return {"hata": f"Bilinmeyen market: {market_kodu}"}
+
+    try:
+        fiyat = float(str(veri.get("fiyat")).replace(",", "."))
+    except (TypeError, ValueError):
+        return {"hata": "Geçerli bir fiyat girin."}
+    if fiyat <= 0:
+        return {"hata": "Fiyat sıfırdan büyük olmalı."}
+
+    baglanti = market.veritabani()
+    try:
+        urun_id = (veri.get("urun_id") or "").strip()
+        if not urun_id:
+            try:
+                urun_id = market.elle_urun_ekle(
+                    baglanti,
+                    veri.get("baslik") or "",
+                    veri.get("marka") or "",
+                    veri.get("gramaj") or "",
+                )
+            except ValueError as hata:
+                return {"hata": str(hata)}
+        else:
+            var = baglanti.execute(
+                "SELECT 1 FROM urun WHERE urun_id = ?", (urun_id,)
+            ).fetchone()
+            if not var:
+                return {"hata": "Ürün bulunamadı."}
+
+        market.elle_fiyat_yaz(baglanti, urun_id, market_kodu, fiyat)
+        adet = market.elle_disa_aktar(baglanti)
+        return {"tamam": True, "urun_id": urun_id, "kayit_sayisi": adet}
+    finally:
+        baglanti.close()
+
+
+def elle_sil(veri: dict) -> dict:
+    urun_id = (veri.get("urun_id") or "").strip()
+    market_kodu = (veri.get("market") or "").strip().lower()
+    if not urun_id or not market_kodu:
+        return {"hata": "Eksik bilgi."}
+    baglanti = market.veritabani()
+    try:
+        market.elle_fiyat_sil(baglanti, urun_id, market_kodu)
+        market.elle_disa_aktar(baglanti)
+        return {"tamam": True}
+    finally:
+        baglanti.close()
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +328,9 @@ class Sunucu(BaseHTTPRequestHandler):
         elif yol == "/api/favori":
             self._gonder(favori_oku())
 
+        elif yol == "/api/elle":
+            self._gonder(elle_listele())
+
         else:
             self._gonder({"hata": "bulunamadi"}, kod=404)
 
@@ -247,6 +345,12 @@ class Sunucu(BaseHTTPRequestHandler):
         elif yol == "/api/cekim":
             kapsam = (veri or {}).get("kapsam")
             self._gonder(cekimi_baslat("favori" if kapsam == "favori" else "hepsi"))
+
+        elif yol == "/api/elle":
+            self._gonder(elle_kaydet(veri or {}))
+
+        elif yol == "/api/elle/sil":
+            self._gonder(elle_sil(veri or {}))
 
         else:
             self._gonder({"hata": "bulunamadi"}, kod=404)

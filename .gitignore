@@ -11,6 +11,10 @@ _test-*.html
 listem.json
 favoriler.json
 
+# DIKKAT: elle_fiyatlar.json bilerek DISARIDA BIRAKILMADI.
+# Elle girdiginiz File/Ozdilek fiyatlari bu dosyayla depoya gider; olmazsa
+# GitHub Actions bos veritabaniyla basladigi icin yayindaki sayfada gorunmez.
+
 # Fiyat veritabani.
 #
 # Varsayilan olarak DISARIDA. Sebep: her calistirmada yeniden uretiliyor ve

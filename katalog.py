@@ -142,11 +142,24 @@ def veriyi_hazirla() -> dict:
     # Cok markette bulunanlar aramada one ciksin
     satirlar.sort(key=lambda s: (-len(s[6]), s[0]))
 
+    # Elle girilen fiyatlarin giris tarihleri -- sayfada "ne zaman girdim"
+    # bilgisini gosterebilmek icin. Anahtar: "urun_id|market"
+    baglanti2 = market.veritabani()
+    try:
+        elle_tarih = {
+            f"{s['urun_id']}|{s['market']}": s["tarih"]
+            for s in baglanti2.execute("SELECT urun_id, market, tarih FROM elle_fiyat")
+        }
+    finally:
+        baglanti2.close()
+
     return {
         "tarih": tarih,
+        "elle_tarih": elle_tarih,
         "sube_sayisi": sube_sayisi,
         "marketler": market_kodlari,
         "market_adlari": [rapor.market_adi(k) for k in market_kodlari],
+        "elle_marketler": market.elle_marketleri_oku(),
         "ziyaret_maliyeti": rapor.ZIYARET_MALIYETI,
         "min_kapsam": rapor.MIN_KAPSAM,
         "urunler": satirlar,
@@ -239,6 +252,7 @@ button.yildiz.dolu{color:#f0a500}
   <button data-s="sepet">Sepet (<span id="rozetSayi">0</span>)</button>
   <button data-s="sonuc">Sonuç</button>
   <button data-s="firsat">Fırsat</button>
+  <button data-s="elle">✎ Elle<span id="elleRozet"></span></button>
   <button data-s="guncelle" id="sekmeGuncelle" style="display:none">⟳ Güncelle</button>
 </div>
 
@@ -304,6 +318,55 @@ Yumurta gibi her marketin kendi markasını sattığı ürünlerde bu olmadan ka
   <div id="firsatListe"></div>
 </div>
 
+<div class="sayfa" id="sayfa-elle">
+  <div class="kart" style="padding:14px">
+    <h3 style="margin:0 0 8px;font-size:15px">File / Özdilek fiyatı gir</h3>
+    <div class="kucuk" id="elleDurum"></div>
+
+    <div class="ayar" style="margin-top:10px">
+      <label>Market: <select id="elleMarket"></select></label>
+    </div>
+
+    <div style="margin-top:14px">
+      <b style="font-size:13px">1) Favorilerim</b>
+      <div class="kucuk">Düzenli aldıklarınız. Markette bu listeyi açıp fiyatları yazın.</div>
+      <div id="elleFavoriler"></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <b style="font-size:13px">2) Katalogdan başka bir ürün ara</b>
+      <div class="kucuk">Ulusal markalar (Sütaş, Ülker, Torku…) zaten katalogda.</div>
+      <input type="search" id="elleAra" placeholder="ürün ara…" autocomplete="off"
+             style="margin-top:6px">
+      <div id="elleSonuc"></div>
+    </div>
+
+    <details style="margin-top:14px;border:none">
+      <summary style="padding:8px 0;font-size:13px">
+        3) Katalogda olmayan ürün ekle (File'a özel markalar)</summary>
+      <input type="text" id="elleBaslik" placeholder="Ürün adı — örn. Dost Süt 1 L">
+      <div class="ayar" style="margin-top:6px">
+        <input type="text" id="elleMarka" placeholder="Marka" style="flex:1">
+        <input type="text" id="elleGramaj" placeholder="Gramaj — 1 L" style="flex:1">
+        <input type="text" id="elleFiyat2" inputmode="decimal" placeholder="Fiyat" style="width:90px">
+      </div>
+      <button class="birincil" id="elleYeniEkle">Yeni ürün olarak ekle</button>
+    </details>
+
+    <div id="elleBekleyen" style="margin-top:16px"></div>
+    <div id="elleKayitli" style="margin-top:16px"></div>
+
+    <details id="elleAktarKutu" style="margin-top:14px;border:none;display:none">
+      <summary style="padding:8px 0;font-size:13px">Telefondan gelen girişleri içeri al</summary>
+      <div class="kucuk">Telefonda “Kopyala” dediğiniz metni buraya yapıştırın.</div>
+      <textarea id="elleYapistir" rows="4" placeholder="[{...}]"
+        style="width:100%;margin-top:6px;font-family:Consolas,monospace;font-size:11px;
+               border:1px solid #c8cfd9;border-radius:8px;padding:8px"></textarea>
+      <button class="birincil" id="elleIceAl">İçeri al</button>
+    </details>
+  </div>
+</div>
+
 <div class="sayfa" id="sayfa-guncelle">
   <div class="kart" style="padding:14px">
     <h3 style="margin:0 0 8px;font-size:15px">Fiyatları güncelle</h3>
@@ -343,6 +406,17 @@ const NITELIK_ADI = {organik: "organik", gezen: "gezen", koy: "köy", omega: "om
   tuzlu: "tuzlu"};
 const nitelikYaz = (s) => (s || "").split("+").filter(Boolean)
   .map((k) => NITELIK_ADI[k] || k).join(", ");
+
+// "2026-07-29" -> "29.07.2026"
+const tarihYaz = (s) => {
+  if (!s || s.length < 10) return s || "";
+  return `${s.slice(8, 10)}.${s.slice(5, 7)}.${s.slice(0, 4)}`;
+};
+const gunFarki = (s) => {
+  if (!s) return null;
+  const fark = (new Date(D.tarih) - new Date(s)) / 86400000;
+  return isNaN(fark) ? null : Math.max(0, Math.round(fark));
+};
 
 const TR = {"ı":"i","İ":"i","I":"i","ğ":"g","Ğ":"g","ü":"u","Ü":"u",
             "ş":"s","Ş":"s","ö":"o","Ö":"o","ç":"c","Ç":"c"};
@@ -467,6 +541,7 @@ document.querySelectorAll(".sekmeler button").forEach((b) => {
     if (b.dataset.s === "firsat") cizFirsatlar();
     if (b.dataset.s === "sepet") cizSepet();
     if (b.dataset.s === "favori") cizFavoriler();
+    if (b.dataset.s === "elle") { cizElleFavoriler(); cizBekleyen(); cizKayitli(); }
     window.scrollTo(0, 0);
   };
 });
@@ -800,6 +875,13 @@ function cizSonuc() {
         h += `<div class="urun"><div class="bilgi">
                 <div class="ad">${kacir(u[0])}${k.adet > 1 ? " ×" + k.adet : ""}</div>
                 <div class="alt">${kacir(u[1])}${bf ? " · " + bf : ""}</div>`;
+        const eTarih = (D.elle_tarih || {})[u[9] + "|" + (D.marketler || [])[m]];
+        if (eTarih) {
+          const y = gunFarki(eTarih);
+          h += `<div class="alt" style="color:#a8710a">elle girildi:
+                ${kacir(tarihYaz(eTarih))}${y !== null ? ` (${y} gün önce)` : ""}${
+                  y !== null && y > 30 ? " — eskimiş olabilir" : ""}</div>`;
+        }
         if (a.farkli) {
           h += `<div class="alt"><span class="rozet firsat">farklı marka</span>
                 istediğiniz: ${kacir(istenen[0])} — aynı gramaj (${kacir(istenen[1])}),
@@ -853,6 +935,218 @@ function cizFirsatlar() {
   bagla(el("#firsatListe"));
 }
 
+/* ---------- elle fiyat girisi ----------
+   Telefonda da calisir: sunucu yoksa girisler cihazda birikir, "Kopyala"
+   ile eve tasinir. Sunucu varsa dogrudan veritabanina yazilir.          */
+
+let bekleyen = [];
+try { bekleyen = JSON.parse(localStorage.getItem("marketElle") || "[]"); } catch (e) {}
+if (!Array.isArray(bekleyen)) bekleyen = [];
+
+// Market listesi elle_marketler.txt'ten geliyor; oraya satir ekleyip
+// programi yeniden baslatinca burada da cikar.
+el("#elleMarket").innerHTML = Object.entries(D.elle_marketler || {})
+  .map(([kod, ad]) => `<option value="${kacir(kod)}">${kacir(ad)}</option>`).join("");
+
+function bekleyenKaydet() {
+  localStorage.setItem("marketElle", JSON.stringify(bekleyen));
+  el("#elleRozet").textContent = bekleyen.length ? ` (${bekleyen.length})` : "";
+  cizBekleyen();
+}
+
+async function elleGonder(kayit) {
+  if (!sunucuVar) { bekleyen.push(kayit); bekleyenKaydet(); return {yerel: true}; }
+  try {
+    const r = await (await fetch("/api/elle", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(kayit)
+    })).json();
+    if (r.hata) { alert(r.hata); return {hata: r.hata}; }
+    await cizKayitli();
+    return r;
+  } catch (e) {
+    bekleyen.push(kayit); bekleyenKaydet();
+    return {yerel: true};
+  }
+}
+
+function cizBekleyen() {
+  const kutu = el("#elleBekleyen");
+  if (!bekleyen.length) { kutu.innerHTML = ""; return; }
+  kutu.innerHTML = `<div class="uyari"><b>${bekleyen.length} giriş bu cihazda bekliyor.</b>
+    <div class="kucuk" style="margin-top:4px">Evde bilgisayardaki sayfayı açın,
+    “Telefondan gelen girişleri içeri al” bölümüne yapıştırın.</div>
+    <div style="margin-top:8px">` +
+    bekleyen.map((k, i) => `<div class="urun" style="padding:5px 0">
+      <div class="bilgi"><div class="ad">${kacir(k.baslik || (U[k._i] && U[k._i][0]) || "?")}</div>
+      <div class="alt">${kacir(k.market)} · ${para(+k.fiyat)}</div></div>
+      <button class="sil" data-bek="${i}">×</button></div>`).join("") +
+    `</div><button class="birincil" id="elleKopyala">Kopyala</button></div>`;
+
+  kutu.querySelectorAll("[data-bek]").forEach((b) => {
+    b.onclick = () => { bekleyen.splice(+b.dataset.bek, 1); bekleyenKaydet(); };
+  });
+  el("#elleKopyala").onclick = async () => {
+    const metin = JSON.stringify(bekleyen);
+    try {
+      await navigator.clipboard.writeText(metin);
+      alert("Kopyalandı. Bilgisayardaki sayfaya yapıştırın.");
+    } catch (e) {
+      prompt("Bu metni kopyalayın:", metin);
+    }
+  };
+}
+
+async function cizKayitli() {
+  if (!sunucuVar) { el("#elleKayitli").innerHTML = ""; return; }
+  let liste = [];
+  try { liste = await (await fetch("/api/elle")).json(); } catch (e) { return; }
+  if (!liste.length) { el("#elleKayitli").innerHTML = ""; return; }
+  el("#elleKayitli").innerHTML =
+    `<b style="font-size:13px">Kayıtlı elle fiyatlar (${liste.length})</b>
+     <div class="kart" style="margin-top:6px">` + liste.map((k) => {
+      const eski = k.yas_gun > 30;
+      return `<div class="urun">
+        <div class="bilgi"><div class="ad">${kacir(k.baslik)}</div>
+        <div class="alt"><span class="rozet ${eski ? "firsat" : "iyi"}">${kacir(k.market_adi)}</span>
+        ${k.gramaj ? kacir(k.gramaj) + " · " : ""}<b>${kacir(tarihYaz(k.tarih))}</b>
+        · ${k.yas_gun} gün önce${eski ? " — güncelleyin" : ""}</div></div>
+        <div class="fiyat"><b>${para(k.fiyat)}</b></div>
+        <button class="sil" data-sil-id="${kacir(k.urun_id)}"
+                data-sil-m="${kacir(k.market)}">×</button></div>`;
+    }).join("") + "</div>";
+
+  el("#elleKayitli").querySelectorAll("[data-sil-id]").forEach((b) => {
+    b.onclick = async () => {
+      await fetch("/api/elle/sil", {method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({urun_id: b.dataset.silId, market: b.dataset.silM})});
+      cizKayitli();
+    };
+  });
+}
+
+function cizElleFavoriler() {
+  const kutu = el("#elleFavoriler");
+  if (!favori.length) {
+    kutu.innerHTML = '<div class="bos" style="padding:14px 0">' +
+      'Favoriniz yok. “Ara” sekmesinde ürünlerin solundaki ☆ işaretine dokunun.</div>';
+    return;
+  }
+  const mKod = el("#elleMarket").value;
+  const mYer = (D.marketler || []).indexOf(mKod);
+
+  kutu.innerHTML = '<div class="kart" style="margin-top:6px">' + favori.map((i) => {
+    const u = U[i];
+    // Bu markette daha once girilmis fiyat varsa gosterelim
+    const mevcut = mYer >= 0 ? (u[6].find((p) => p[0] === mYer) || [])[1] : undefined;
+    const enUcuz = u[6][0];
+    const gt = (D.elle_tarih || {})[u[9] + "|" + mKod];
+    const yas = gunFarki(gt);
+    const eski = yas !== null && yas > 30;
+    return `<div class="urun">
+      <div class="bilgi">
+        <div class="ad">${kacir(u[0])}</div>
+        <div class="alt">${kacir(u[1])} · en ucuz
+          <b>${kacir(MARKET[enUcuz[0]])} ${para(enUcuz[1])}</b></div>
+        ${mevcut !== undefined ? `<div class="alt">
+          <span class="rozet ${eski ? "firsat" : "iyi"}">kayıtlı ${para(mevcut)}</span>
+          ${gt ? tarihYaz(gt) + (yas !== null ? ` · ${yas} gün önce` : "") : ""}${
+            eski ? " — güncelleyin" : ""}</div>` : ""}
+      </div>
+      <input type="text" inputmode="decimal" placeholder="${
+        mevcut !== undefined ? mevcut.toFixed(2) : "fiyat"}"
+             data-fav="${i}" style="width:78px;padding:6px;font-size:14px;
+             border:1px solid #c8cfd9;border-radius:7px;text-align:right">
+      <button class="ekle" data-favkaydet="${i}">Kaydet</button>
+    </div>`;
+  }).join("") + "</div>";
+
+  kutu.querySelectorAll("[data-favkaydet]").forEach((b) => {
+    b.onclick = async () => {
+      const i = +b.dataset.favkaydet;
+      const g = kutu.querySelector(`[data-fav="${i}"]`);
+      const f = (g.value || "").replace(",", ".");
+      if (!f || isNaN(+f) || +f <= 0) { alert("Geçerli bir fiyat girin."); return; }
+      const r = await elleGonder({urun_id: U[i][9], market: el("#elleMarket").value,
+                                  fiyat: +f, baslik: U[i][0], _i: i});
+      if (!r.hata) { g.value = ""; b.textContent = "✓"; b.classList.add("eklendi"); }
+    };
+  });
+}
+
+el("#elleMarket").onchange = cizElleFavoriler;
+
+let elleZaman = null;
+el("#elleAra").addEventListener("input", () => {
+  clearTimeout(elleZaman);
+  elleZaman = setTimeout(() => {
+    const q = el("#elleAra").value.trim();
+    if (q.length < 2) { el("#elleSonuc").innerHTML = ""; return; }
+    const k = sade(q).split(/\s+/).filter(Boolean);
+    const bul = [];
+    for (let i = 0; i < U.length && bul.length < 25; i++) {
+      if (k.every((x) => ARAMA[i].includes(x))) bul.push(i);
+    }
+    el("#elleSonuc").innerHTML = bul.length
+      ? '<div class="kart" style="margin-top:6px">' + bul.map((i) => `<div class="urun">
+          <div class="bilgi"><div class="ad">${kacir(U[i][0])}</div>
+          <div class="alt">${kacir(U[i][1])} · en ucuz ${para(U[i][6][0][1])}</div></div>
+          <input type="text" inputmode="decimal" placeholder="fiyat"
+                 data-f="${i}" style="width:78px;padding:6px;font-size:14px;
+                 border:1px solid #c8cfd9;border-radius:7px;text-align:right">
+          <button class="ekle" data-kaydet="${i}">Kaydet</button></div>`).join("") + "</div>"
+      : '<div class="bos">Sonuç yok — aşağıdaki “yeni ürün” bölümünü kullanın.</div>';
+
+    el("#elleSonuc").querySelectorAll("[data-kaydet]").forEach((b) => {
+      b.onclick = async () => {
+        const i = +b.dataset.kaydet;
+        const g = el("#elleSonuc").querySelector(`[data-f="${i}"]`);
+        const f = (g.value || "").replace(",", ".");
+        if (!f || isNaN(+f) || +f <= 0) { alert("Geçerli bir fiyat girin."); return; }
+        const r = await elleGonder({urun_id: U[i][9], market: el("#elleMarket").value,
+                                    fiyat: +f, baslik: U[i][0], _i: i});
+        if (!r.hata) { g.value = ""; b.textContent = "✓"; b.classList.add("eklendi"); }
+      };
+    });
+  }, 200);
+});
+
+el("#elleYeniEkle").onclick = async () => {
+  const baslik = el("#elleBaslik").value.trim();
+  const f = (el("#elleFiyat2").value || "").replace(",", ".");
+  if (!baslik) { alert("Ürün adı girin."); return; }
+  if (!f || isNaN(+f) || +f <= 0) { alert("Geçerli bir fiyat girin."); return; }
+  const r = await elleGonder({
+    baslik: baslik, marka: el("#elleMarka").value.trim(),
+    gramaj: el("#elleGramaj").value.trim(),
+    market: el("#elleMarket").value, fiyat: +f
+  });
+  if (!r.hata) {
+    el("#elleBaslik").value = el("#elleMarka").value = "";
+    el("#elleGramaj").value = el("#elleFiyat2").value = "";
+    alert("Eklendi.");
+  }
+};
+
+el("#elleIceAl").onclick = async () => {
+  let kayitlar;
+  try { kayitlar = JSON.parse(el("#elleYapistir").value.trim()); } catch (e) {
+    alert("Metin okunamadı. Telefondaki “Kopyala” çıktısını olduğu gibi yapıştırın.");
+    return;
+  }
+  if (!Array.isArray(kayitlar) || !kayitlar.length) { alert("Kayıt yok."); return; }
+  let ok = 0;
+  for (const k of kayitlar) {
+    const r = await (await fetch("/api/elle", {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify(k)})).json();
+    if (!r.hata) ok++;
+  }
+  el("#elleYapistir").value = "";
+  await cizKayitli();
+  alert(`${ok}/${kayitlar.length} kayıt içeri alındı. Yeni fiyatlar için sayfayı yenileyin (F5).`);
+};
+
 /* ---------- sunucu modu ----------
    Ayni dosya iki sekilde acilabiliyor:
      * file:// ile dogrudan (telefon, cevrimdisi) -> arkasinda program yok,
@@ -871,6 +1165,10 @@ async function sunucuYokla() {
     const d = await c.json();
     sunucuVar = true;
     el("#sekmeGuncelle").style.display = "";
+    el("#elleAktarKutu").style.display = "";
+    el("#elleDurum").textContent =
+      "Bilgisayardasınız — girdikleriniz doğrudan kaydedilir.";
+    await cizKayitli();
     if (d.damga) {
       el("#ust").textContent += ` · marketlerin son güncellemesi ${d.damga}`;
     }
@@ -879,6 +1177,8 @@ async function sunucuYokla() {
     if (i.calisiyor) { document.querySelector('[data-s="guncelle"]').click(); cekIzle(); }
   } catch (e) {
     sunucuVar = false;   // file:// ile acilmis, normal durum
+    el("#elleDurum").textContent =
+      "Telefondasınız — girişler bu cihazda birikir, evde bilgisayara aktarırsınız.";
   }
 }
 
@@ -948,6 +1248,7 @@ el("#cekFavori").onclick = () => {
 
 kaydet();
 favKaydet();
+bekleyenKaydet();
 sunucuYokla();
 </script></body></html>"""
 

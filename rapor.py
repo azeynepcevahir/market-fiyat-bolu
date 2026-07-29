@@ -45,7 +45,10 @@ MARKET_ADLARI = {
 
 
 def market_adi(kod: str) -> str:
-    return MARKET_ADLARI.get(kod, (kod or "?").title())
+    """API marketleri + elle_marketler.txt'te tanimli olanlar."""
+    if kod in MARKET_ADLARI:
+        return MARKET_ADLARI[kod]
+    return market.elle_marketleri_oku().get(kod, (kod or "?").title())
 
 
 def para(deger: float | None) -> str:
@@ -104,6 +107,54 @@ def teklifleri_yukle(baglanti, tarih: str) -> list[dict]:
             {s["arama_kelimesi"]} if s["arama_kelimesi"] else set()
         )
         teklifler.append(t)
+
+    teklifler.extend(_elle_teklifleri(baglanti, tarih))
+    return teklifler
+
+
+def _elle_teklifleri(baglanti, tarih: str) -> list[dict]:
+    """
+    Elle girilen fiyatlari (File, Ozdilek) teklif listesine katar.
+
+    Bunlar gunluk cekimden bagimsiz durur; her raporda tasinirlar.
+    Kac gun once girildikleri 'yas_gun' alaninda tasinir ki eskiyenler
+    arayuzde isaretlenebilsin.
+    """
+    # Depoyla birlikte gelen yedegi her seferinde iceri al; boylece bos
+    # veritabaniyla baslayan GitHub Actions calistirmasi da elle girilen
+    # fiyatlari icerir.
+    market.elle_ice_aktar(baglanti)
+
+    bugun = date.fromisoformat(tarih)
+    satirlar = baglanti.execute(
+        """
+        SELECT e.urun_id, e.market, e.fiyat, e.tarih,
+               u.baslik, u.marka, u.ana_kategori, u.gramaj_ham,
+               u.miktar, u.birim, u.isim_anahtari, u.arama_kelimesi, u.grup
+        FROM elle_fiyat e
+        JOIN urun u ON u.urun_id = e.urun_id
+        """
+    ).fetchall()
+
+    teklifler = []
+    for s in satirlar:
+        try:
+            yas = (bugun - date.fromisoformat(s["tarih"])).days
+        except ValueError:
+            yas = 0
+        miktar = s["miktar"]
+        teklifler.append({
+            "urun_id": s["urun_id"], "baslik": s["baslik"], "marka": s["marka"],
+            "ana_kategori": s["ana_kategori"], "gramaj_ham": s["gramaj_ham"],
+            "miktar": miktar, "birim": s["birim"],
+            "isim_anahtari": s["isim_anahtari"], "arama_kelimesi": s["arama_kelimesi"],
+            "grup": s["grup"], "market": s["market"], "fiyat": s["fiyat"],
+            "birim_fiyat": (s["fiyat"] / miktar) if miktar else None,
+            "indirim": 0, "promosyon": None,
+            "guncelleme": f"{s['tarih']} (elle)",
+            "kelimeler": {s["arama_kelimesi"]} if s["arama_kelimesi"] else set(),
+            "elle": True, "yas_gun": yas,
+        })
     return teklifler
 
 
