@@ -73,7 +73,20 @@ jobs:
           git add docs
           if git diff --staged --quiet; then
             echo "Fiyatlarda değişiklik yok."
-          else
-            git commit -m "Fiyat güncellemesi $(date -u +'%Y-%m-%d')"
-            git push
+            exit 0
           fi
+          git commit -m "Fiyat güncellemesi $(date -u +'%Y-%m-%d')"
+
+          # Cekim ~1 saat surdugu icin bu sirada depoya baska bir commit
+          # girmis olabilir (elle yapilan bir push gibi). O zaman dogrudan
+          # push reddedilir. Once uzaktakinin ustune tasiyip tekrar deniyoruz.
+          for deneme in 1 2 3; do
+            if git push; then
+              echo "Gonderildi (deneme $deneme)."
+              exit 0
+            fi
+            echo "Push reddedildi, uzaktaki degisiklikler alinip tekrar denenecek..."
+            git pull --rebase origin main || exit 1
+          done
+          echo "Uc denemede de gonderilemedi."
+          exit 1
