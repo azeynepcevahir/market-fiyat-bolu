@@ -220,6 +220,16 @@
   "grup": "Elle eklenen"
  },
  {
+  "urun_id": "elle-3471586942",
+  "market": "file",
+  "fiyat": 135.0,
+  "tarih": "2026-07-30",
+  "baslik": "Lumandıra Jersey Pastörize Süt 1 Lt",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
   "urun_id": "elle-5076516534",
   "market": "file",
   "fiyat": 19.9,
@@ -260,11 +270,41 @@
   "grup": "Elle eklenen"
  },
  {
+  "urun_id": "elle-8956280731",
+  "market": "file",
+  "fiyat": 59.9,
+  "tarih": "2026-07-30",
+  "baslik": "Kallavi Kavun 1 Kg",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
   "urun_id": "elle-9057127739",
   "market": "file",
   "fiyat": 59.9,
   "tarih": "2026-07-30",
   "baslik": "Kallavi Kavun 1 Kg",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
+  "urun_id": "elle-9309505287",
+  "market": "file",
+  "fiyat": 42.5,
+  "tarih": "2026-07-30",
+  "baslik": "Domates 1 Kg",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
+  "urun_id": "elle-9795496865",
+  "market": "file",
+  "fiyat": 84.9,
+  "tarih": "2026-07-30",
+  "baslik": "Lamas Limon 1 Kg",
   "marka": "",
   "gramaj": "",
   "grup": "Elle eklenen"
