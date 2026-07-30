@@ -12,12 +12,38 @@
 #                 (degistirirseniz o marketin eski fiyatlari kopuk kalir).
 #  * "Gorunen ad" ekranda ve raporda gorunen isim. Istediginiz gibi yazin.
 #
-#  Yeni market eklemek icin alta bir satir yazip kaydedin, sonra
-#  Baslat.bat'i kapatip tekrar acin.
+#  Kullanmadiginiz marketleri basina # koyarak kapatin; menu uzamasin.
+#  Degisiklik sonrasi Baslat.bat'i kapatip tekrar acin.
+#
+#  NOT: Su alti zincir API'den OTOMATIK geliyor, buraya YAZMAYIN:
+#       A101, BIM, CarrefourSA, Migros, SOK, Tarim Kredi
 # =====================================================================
 
+
+# --- kullandiklariniz ---
 file      | File
 ozdilek   | Özdilek
 nuhmar    | Nuhmar
 basgimpa  | Başgimpa
 diger     | Diğer
+
+
+# --- Bolu'da bulunan diger zincirler ---
+# Kullaniyorsaniz bastaki # isaretini silin.
+
+# adese      | Adese
+# secmarket  | Seç Market
+# soykan     | Soykan Market
+# cetinkaya  | Çetinkaya
+# ekomini    | Ekomini
+# bolavantaj | Bol Avantaj Market
+
+# Toptanci -- buyuk paketlerde ise yarar, perakendeyle ayni gramajda
+# olmayabilir. Karsilastirirken gramaja dikkat edin.
+# bizimtoptan | Bizim Toptan
+
+
+# --- kendi ekleyecekleriniz ---
+# Semt bakkallari, pazar tezgahi vb. icin de satir acabilirsiniz:
+# pazar      | Cuma Pazarı
+# bakkal     | Mahalle Bakkalı
