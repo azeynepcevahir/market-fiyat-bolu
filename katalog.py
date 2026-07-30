@@ -353,6 +353,55 @@ Yumurta gibi her marketin kendi markasını sattığı ürünlerde bu olmadan ka
       <button class="birincil" id="elleYeniEkle">Yeni ürün olarak ekle</button>
     </details>
 
+    <details style="margin-top:14px;border:none">
+      <summary style="padding:8px 0;font-size:13px">
+        4) Dosyadan toplu aktar (txt)</summary>
+
+      <div class="kucuk">
+        Fiyatları bir metin dosyasına yazıp topluca aktarabilirsiniz.
+        Dosya seçin ya da içeriğini aşağıya yapıştırın.
+      </div>
+
+      <details style="margin:8px 0;border:none">
+        <summary style="padding:6px 0;font-size:12.5px">Dosya nasıl yazılır?</summary>
+        <div class="kucuk" style="margin-bottom:6px">
+          Her satır bir ürün: <b>ürün adı | fiyat</b><br>
+          Köşeli parantez o satırdan sonrasının hangi markete ait olduğunu belirler.<br>
+          <code>#</code> ile başlayan satırlar not olarak atlanır.
+        </div>
+<pre style="background:#f4f6f8;color:#14181f;border:1px solid #dde2e9;padding:10px;
+     border-radius:8px;font-size:11.5px;white-space:pre-wrap;margin:0"># 28 Temmuz, File Bolu merkez
+[file]
+Sütaş Tam Yağlı Süt 1 L | 42,50
+Yudum Riviera Zeytinyağı 1 Lt | 219,90
+Torku Tam Buğday Un 5 Kg | 135
+
+[ozdilek]
+Sütaş Tam Yağlı Süt 1 L | 44,00
+
+# Tarih belirtmek isterseniz (yazmazsanız bugün sayılır):
+[tarih: 2026-07-28]
+[nuhmar]
+Piyale Burgu Makarna 500 Gr | 17,50</pre>
+        <div class="kucuk" style="margin-top:6px">
+          <b>Ayırıcı:</b> <code>|</code> kullanın. Noktalı virgül ve sekme de kabul edilir.<br>
+          <b>Fiyat:</b> <code>42,50</code> ya da <code>42.50</code> — ikisi de olur, TL yazmanıza gerek yok.<br>
+          <b>Market kodları:</b> <span id="elleKodlar"></span><br>
+          <b>Ürün adı:</b> katalogdaki adla birebir aynı olmak zorunda değil; yazdığınız
+          kelimelerin hepsi geçen ürün bulunur. Bulunamazsa yeni ürün olarak eklenir,
+          gramajı adından çözülür (bu yüzden <i>1 L</i>, <i>500 Gr</i> gibi bir miktar yazın).
+        </div>
+      </details>
+
+      <input type="file" id="elleDosya" accept=".txt,.csv,text/plain"
+             style="font-size:13px;margin:6px 0">
+      <textarea id="elleToplu" rows="6" placeholder="[file]&#10;Ürün adı | fiyat"
+        style="width:100%;font-family:Consolas,monospace;font-size:12px;
+               border:1px solid #c8cfd9;border-radius:8px;padding:8px"></textarea>
+      <button class="birincil" id="elleOnizle" style="background:#3a4250">Önizle</button>
+      <div id="elleOnizleme"></div>
+    </details>
+
     <div id="elleBekleyen" style="margin-top:16px"></div>
     <div id="elleKayitli" style="margin-top:16px"></div>
 
@@ -947,6 +996,8 @@ if (!Array.isArray(bekleyen)) bekleyen = [];
 // programi yeniden baslatinca burada da cikar.
 el("#elleMarket").innerHTML = Object.entries(D.elle_marketler || {})
   .map(([kod, ad]) => `<option value="${kacir(kod)}">${kacir(ad)}</option>`).join("");
+el("#elleKodlar").innerHTML = Object.entries(D.elle_marketler || {})
+  .map(([kod, ad]) => `<code>${kacir(kod)}</code> = ${kacir(ad)}`).join(" &middot; ");
 
 function bekleyenKaydet() {
   localStorage.setItem("marketElle", JSON.stringify(bekleyen));
@@ -1028,6 +1079,262 @@ async function cizKayitli() {
     };
   });
 }
+
+/* ---------- dosyadan toplu aktarma ----------
+   Bicim:  [market]  satiri o noktadan sonrasinin marketini belirler,
+           [tarih: YYYY-AA-GG] giris tarihini,
+           kalan satirlar "urun adi | fiyat".
+   Urun adi katalogla eslestirilir; eslesmezse yeni urun olarak eklenir.  */
+
+function toplu_coz(metin) {
+  const kodlar = Object.keys(D.elle_marketler || {});
+  let market = kodlar[0] || "file";
+  let tarih = null;
+  const kayitlar = [], hatalar = [];
+
+  metin.split(/\r?\n/).forEach((ham, i) => {
+    const s = ham.trim();
+    if (!s || s.startsWith("#")) return;
+
+    const basliksatiri = s.match(/^\[\s*([^\]]+?)\s*\]$/);
+    if (basliksatiri) {
+      const ic = basliksatiri[1].trim();
+      const t = ic.match(/^tarih\s*[:=]\s*(\d{4}-\d{2}-\d{2})$/i);
+      if (t) { tarih = t[1]; return; }
+      const kod = sade(ic);
+      if (kodlar.includes(kod)) { market = kod; }
+      else hatalar.push(`Satır ${i + 1}: bilinmeyen market “${ic}”`);
+      return;
+    }
+
+    const parca = s.split(/\s*[|;\t]\s*/).filter((x) => x !== "");
+    if (parca.length < 2) {
+      hatalar.push(`Satır ${i + 1}: ayırıcı ( | ) yok — ${s}`);
+      return;
+    }
+
+    // "market | urun | fiyat" bicimi de kabul edilir
+    let satirMarket = market;
+    let alanlar = parca;
+    if (parca.length >= 3 && kodlar.includes(sade(parca[0]))) {
+      satirMarket = sade(parca[0]);
+      alanlar = parca.slice(1);
+    }
+
+    const fiyat = parseFloat(
+      alanlar[alanlar.length - 1].replace(/[^\d.,]/g, "").replace(",", ".")
+    );
+    if (!fiyat || fiyat <= 0) {
+      hatalar.push(`Satır ${i + 1}: fiyat okunamadı — ${s}`);
+      return;
+    }
+
+    const ad = alanlar.slice(0, -1).join(" ").trim();
+    if (!ad) { hatalar.push(`Satır ${i + 1}: ürün adı boş`); return; }
+
+    kayitlar.push({satir: i + 1, ad, market: satirMarket, fiyat, tarih});
+  });
+
+  return {kayitlar, hatalar};
+}
+
+// Yazdiginiz metinden miktar cikarir: "1 Lt" -> [1, "lt"], "500 Gr" -> [0.5, "kg"]
+const BIRIM_CARPAN = {
+  kg: [1, "kg"], kilo: [1, "kg"], gr: [0.001, "kg"], g: [0.001, "kg"], gram: [0.001, "kg"],
+  lt: [1, "lt"], l: [1, "lt"], litre: [1, "lt"], ml: [0.001, "lt"], cl: [0.01, "lt"],
+  adet: [1, "adet"], adetli: [1, "adet"], li: [1, "adet"], lu: [1, "adet"],
+};
+
+function miktarCoz(metin) {
+  const m = sade(metin).match(
+    /(\d+(?:[.,]\d+)?)\s*(kg|kilo|gram|gr|litre|lt|ml|cl|adetli|adet|li|lu|g|l)\b/);
+  if (!m) return null;
+  const c = BIRIM_CARPAN[m[2]];
+  if (!c) return null;
+  return [parseFloat(m[1].replace(",", ".")) * c[0], c[1]];
+}
+
+/*  Once yazdiginiz kelimelerin hepsini iceren urunler bulunur, sonra
+    sirasiyla daraltilir:
+      1) basligi birebir ayni olan
+      2) gramaji yazdiginizla ayni olan
+      3) fazladan kelimesi en az olan (en sade eslesme)
+    Tek aday kalmazsa hepsi dondurulur ve arayuz size sectirir.          */
+function toplu_eslestir(ad) {
+  const k = sade(ad).split(/\s+/).filter(Boolean);
+  if (!k.length) return [];
+
+  let aday = [];
+  for (let i = 0; i < U.length; i++) {
+    if (k.every((x) => ARAMA[i].includes(x))) {
+      aday.push(i);
+      if (aday.length > 60) break;
+    }
+  }
+  if (aday.length <= 1) return aday;
+
+  const hedef = sade(ad);
+  const tam = aday.filter((i) => sade(U[i][0]) === hedef);
+  if (tam.length === 1) return tam;
+
+  const mik = miktarCoz(ad);
+  if (mik) {
+    const ayni = aday.filter(
+      (i) => U[i][4] === mik[1] && Math.abs((U[i][5] || 0) - mik[0]) < 0.0005);
+    if (ayni.length === 1) return ayni;
+    if (ayni.length) aday = ayni;
+  }
+
+  // En sade eslesme: basliginda fazladan kelime en az olan
+  aday.sort((a, b) => sade(U[a][0]).split(/\s+/).length -
+                      sade(U[b][0]).split(/\s+/).length);
+  const enKisa = sade(U[aday[0]][0]).split(/\s+/).length;
+  const esKisa = aday.filter((i) => sade(U[i][0]).split(/\s+/).length === enKisa);
+  if (esKisa.length === 1) return esKisa;
+
+  return aday.slice(0, 8);
+}
+
+let topluHazir = [];
+
+function toplu_onizle(metin) {
+  const {kayitlar, hatalar} = toplu_coz(metin);
+  topluHazir = [];
+
+  if (!kayitlar.length && !hatalar.length) {
+    el("#elleOnizleme").innerHTML = '<div class="bos">Okunacak satır yok.</div>';
+    return;
+  }
+
+  let h = "";
+  if (hatalar.length) {
+    h += '<div class="uyari"><b>Okunamayan satırlar:</b><br>' +
+         hatalar.map(kacir).join("<br>") + "</div>";
+  }
+
+  let belirsizSayisi = 0;
+  const satirlar = kayitlar.map((k, sira) => {
+    const bul = toplu_eslestir(k.ad);
+    const marketAdi = (D.elle_marketler || {})[k.market] || k.market;
+    let ekMenu = "";
+    let durum, aciklama;
+
+    if (bul.length === 1) {
+      durum = "eslesti";
+      aciklama = U[bul[0]][0];
+      topluHazir.push({urun_id: U[bul[0]][9], baslik: U[bul[0]][0],
+                       market: k.market, fiyat: k.fiyat, tarih: k.tarih});
+    } else if (bul.length > 1) {
+      // Karar veremedik: kullaniciya sectirelim, dosyayi duzelttirmeyelim
+      durum = "belirsiz";
+      belirsizSayisi++;
+      aciklama = `${bul.length} olası ürün — hangisi?`;
+      ekMenu = `<select class="topluSec" data-sira="${sira}"
+                   data-market="${kacir(k.market)}" data-fiyat="${k.fiyat}"
+                   data-tarih="${kacir(k.tarih || "")}"
+                   style="width:100%;margin-top:5px;font-size:12px">
+          <option value="">— seçilmedi, aktarılmayacak —</option>` +
+        bul.map((i) => `<option value="${i}">${kacir(U[i][0])}${
+          U[i][1] ? " (" + kacir(U[i][1]) + ")" : ""}</option>`).join("") +
+        `<option value="yeni">yeni ürün olarak ekle: ${kacir(k.ad)}</option></select>`;
+    } else {
+      durum = "yeni";
+      aciklama = "katalogda yok — yeni ürün olarak eklenecek";
+      topluHazir.push({baslik: k.ad, marka: "", gramaj: "",
+                       market: k.market, fiyat: k.fiyat, tarih: k.tarih});
+    }
+
+    const renk = {eslesti: "iyi", yeni: "", belirsiz: "firsat"}[durum];
+    const isaret = {eslesti: "✓", yeni: "＋", belirsiz: "?"}[durum];
+    return `<div class="urun" style="align-items:flex-start">
+      <div class="bilgi"><div class="ad">${isaret} ${kacir(k.ad)}</div>
+        <div class="alt"><span class="rozet ${renk}">${kacir(marketAdi)}</span>${
+          kacir(aciklama)}</div>${ekMenu}</div>
+      <div class="fiyat"><b>${para(k.fiyat)}</b></div></div>`;
+  }).join("");
+
+  h += `<div class="kart" style="margin-top:8px">${satirlar}</div>`;
+  h += `<div class="kucuk" style="margin-top:8px" id="elleSayac">
+        ${topluHazir.length} kayıt aktarılmaya hazır` +
+       (belirsizSayisi ? `, <b>${belirsizSayisi} satır için seçim bekleniyor</b>` : "") +
+       "</div>";
+  if (topluHazir.length) {
+    h += `<button class="birincil" id="elleTopluAktar">
+          ${topluHazir.length} kaydı aktar</button>`;
+  }
+
+  el("#elleOnizleme").innerHTML = h;
+
+  // Belirsiz satirlarda yapilan secimler listeye eklenir/cikarilir
+  const secimler = new Map();
+  el("#elleOnizleme").querySelectorAll(".topluSec").forEach((s) => {
+    s.onchange = () => {
+      const sira = s.dataset.sira;
+      const onceki = secimler.get(sira);
+      if (onceki) {
+        const yer = topluHazir.indexOf(onceki);
+        if (yer >= 0) topluHazir.splice(yer, 1);
+        secimler.delete(sira);
+      }
+      const d = s.value;
+      if (d) {
+        const ortak = {market: s.dataset.market, fiyat: +s.dataset.fiyat,
+                       tarih: s.dataset.tarih || null};
+        const kayit = d === "yeni"
+          ? Object.assign({baslik: s.closest(".urun").querySelector(".ad")
+                             .textContent.replace(/^[?＋✓]\s*/, "").trim(),
+                           marka: "", gramaj: ""}, ortak)
+          : Object.assign({urun_id: U[+d][9], baslik: U[+d][0]}, ortak);
+        topluHazir.push(kayit);
+        secimler.set(sira, kayit);
+      }
+      const bekleyenSecim = el("#elleOnizleme").querySelectorAll(".topluSec").length
+                            - secimler.size;
+      el("#elleSayac").innerHTML = `${topluHazir.length} kayıt aktarılmaya hazır` +
+        (bekleyenSecim ? `, <b>${bekleyenSecim} satır için seçim bekleniyor</b>` : "");
+      const d2 = el("#elleTopluAktar");
+      if (d2) {
+        d2.textContent = `${topluHazir.length} kaydı aktar`;
+        d2.disabled = topluHazir.length === 0;
+      }
+    };
+  });
+
+  const dugme = el("#elleTopluAktar");
+  if (dugme) dugme.onclick = async () => {
+    dugme.disabled = true;
+    const sayac = {eklendi: 0, guncellendi: 0, atlandi: 0, yerel: 0, hata: 0};
+    for (const kayit of topluHazir) {
+      const r = await elleGonder(kayit);
+      if (r.yerel) sayac.yerel++;
+      else if (r.hata) sayac.hata++;
+      else sayac[r.durum || "eklendi"]++;
+    }
+    let ozet = sayac.yerel
+      ? `${sayac.yerel} kayıt bu cihazda biriktirildi (sunucu yok).`
+      : `${sayac.eklendi} yeni, ${sayac.guncellendi} güncellendi` +
+        (sayac.atlandi ? `, ${sayac.atlandi} atlandı (mevcut kayıt daha yeni)` : "") +
+        (sayac.hata ? `, ${sayac.hata} hata` : "");
+    alert(ozet + "\n\nYeni fiyatlar için sayfayı yenileyin (F5).");
+    el("#elleToplu").value = "";
+    el("#elleOnizleme").innerHTML = "";
+    topluHazir = [];
+    cizElleFavoriler(); cizKayitli();
+  };
+}
+
+el("#elleOnizle").onclick = () => toplu_onizle(el("#elleToplu").value);
+
+el("#elleDosya").onchange = (olay) => {
+  const dosya = olay.target.files && olay.target.files[0];
+  if (!dosya) return;
+  const okuyucu = new FileReader();
+  okuyucu.onload = () => {
+    el("#elleToplu").value = okuyucu.result;
+    toplu_onizle(okuyucu.result);
+  };
+  okuyucu.readAsText(dosya, "utf-8");
+};
 
 function cizElleFavoriler() {
   const kutu = el("#elleFavoriler");

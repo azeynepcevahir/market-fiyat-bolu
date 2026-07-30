@@ -153,6 +153,74 @@ kapatırsanız sadece 1. kural uygulanır.
 
 ---
 
+## Elle fiyat girme (File, Özdilek, Nuhmar, Başgimpa)
+
+Bu marketler marketfiyati.org.tr'de yok, fiyatları hiçbir yerden çekilemiyor.
+Elle girdiğinizde diğer 6 zincirle **birebir aynı** muameleyi görürler:
+karşılaştırma tablosuna, muadil eşleştirmesine ve market dağıtımı
+optimizasyonuna girerler.
+
+Sayfadaki **✎ Elle** sekmesinde dört yol var:
+
+1. **Favorilerim** — düzenli aldıklarınız listelenir, yanlarına fiyat yazarsınız
+2. **Katalogdan ara** — 13 bin ürünün herhangi biri
+3. **Yeni ürün ekle** — katalogda olmayan, markete özel ürünler
+4. **Dosyadan toplu aktar** — aşağıda
+
+Market listesi `elle_marketler.txt` dosyasından gelir; yeni bir market eklemek
+için oraya bir satır yazıp programı yeniden başlatın.
+
+### Dosya biçimi
+
+`ornek-fiyatlar.txt` dosyası hazır örnek içerir. Kurallar:
+
+```
+# Bu bir not satırı, atlanır
+[file]
+Sütaş Tam Yağlı Süt 1 Lt | 42,50
+Yudum Riviera Zeytinyağı 1 Lt | 219,90
+
+[ozdilek]
+Sütaş Tam Yağlı Süt 1 Lt | 44,00
+
+[tarih: 2026-07-28]
+[nuhmar]
+Yumurta M Boy 30 Adet | 129,00
+```
+
+| Kural | Açıklama |
+|---|---|
+| `ürün adı \| fiyat` | Her satır bir ürün |
+| `[market]` | O noktadan sonrasının marketi |
+| `[tarih: YYYY-AA-GG]` | Giriş tarihi (yazmazsanız bugün) |
+| `#` | Not satırı, atlanır |
+| Ayırıcı | `\|` — noktalı virgül ve sekme de olur |
+| Fiyat | `42,50` veya `42.50` — TL yazmayın |
+
+**Ürün adı** katalogdakiyle birebir aynı olmak zorunda değil; yazdığınız
+kelimelerin hepsi geçen ürün bulunur. Marka + ürün + gramaj yazmak yeterli:
+`Yudum Riviera Zeytinyağı 1 Lt` → `Yudum Egemden Riviera Zeytinyağı 1 Lt`.
+
+Birden fazla ürün uyarsa o satır için ekranda **seçim menüsü** çıkar; dosyayı
+düzeltmenize gerek kalmaz. Hiçbiri uymazsa yeni ürün olarak eklenir — bu yüzden
+adında mutlaka bir miktar bulunsun (`1 L`, `500 Gr`, `30 Adet`), gramajı oradan
+çözülüyor.
+
+### Çakışma kuralı
+
+Aynı ürün + aynı market için birden fazla giriş varsa **tarihi yeni olan
+kazanır**. Arkadaşınızla giriş paylaşırsanız eski bir fiyat yenisini ezmez;
+aktarım sonunda kaç kaydın eklendiği, güncellendiği ve atlandığı raporlanır.
+
+### Yayına yansıtma
+
+Girdikleriniz `elle_fiyatlar.json` dosyasına yazılır. Bu dosya depoya dahildir,
+çünkü GitHub Actions her çalıştırmada boş veritabanıyla başlar; dosya olmasa
+elle girdikleriniz yayındaki sayfada görünmezdi. Girdikten sonra **commit +
+push** yapın.
+
+---
+
 ## Temizlik ürünleri neden farklı çalışıyor
 
 Sistem temizlik ve kişisel bakım kategorilerinde **hiçbir ürünü kendiliğinden

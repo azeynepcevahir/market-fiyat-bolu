@@ -1,0 +1,58 @@
+# =====================================================================
+#  ORNEK FIYAT DOSYASI  --  toplu aktarma icin
+# =====================================================================
+#
+#  Bu dosyayi kopyalayip kendi fiyatlarinizla doldurun, sonra sayfadaki
+#  "Elle" sekmesi -> "4) Dosyadan toplu aktar" bolumunden secin.
+#
+#  KURALLAR
+#  --------
+#  * Her satir bir urun:        urun adi | fiyat
+#  * [market] satiri            o noktadan sonrasinin marketini belirler
+#  * [tarih: YYYY-AA-GG]        giris tarihini belirler (yazmazsaniz bugun)
+#  * # ile baslayan satirlar    not, atlanir
+#  * Ayirici                    |  (noktali virgul ve sekme de olur)
+#  * Fiyat                      42,50  ya da  42.50 -- TL yazmayin
+#
+#  URUN ADI
+#  --------
+#  Katalogdaki adla birebir ayni olmak zorunda degil. Yazdiginiz
+#  kelimelerin HEPSI gecen urun bulunur:
+#      "sutas sut 1 l"  ->  "Sütaş %3,5 Tam Yağlı Süt 1 Lt" ile eslesir
+#
+#  Birden fazla urun eslesirse o satir "belirsiz" olarak isaretlenir ve
+#  aktarilmaz -- marka veya gramaj ekleyerek daraltin.
+#
+#  Hicbiri eslesmezse YENI URUN olarak eklenir. Bu durumda gramaji
+#  adindan cozuldugu icin mutlaka bir miktar yazin: "1 L", "500 Gr", "30 Adet".
+#
+#  MARKET KODLARI
+#  --------------
+#  elle_marketler.txt dosyasindan gelir. Su an tanimli olanlar:
+#      file, ozdilek, nuhmar, basgimpa, diger
+# =====================================================================
+
+
+[file]
+Sütaş Tam Yağlı Süt 1 Lt | 42,50
+Yudum Riviera Zeytinyağı 1 Lt | 219,90
+Piyale Burgu Makarna 500 Gr | 17,50
+Reis Kırmızı Mercimek 1 Kg | 46,00
+
+
+[ozdilek]
+Sütaş Tam Yağlı Süt 1 Lt | 44,00
+Torku Sade Tahin Helva 500 Gr | 139,90
+
+
+# Gecmis bir tarihte aldiginiz fiyati girmek isterseniz:
+[tarih: 2026-07-28]
+[nuhmar]
+Yumurta M Boy 30 Adet | 129,00
+
+
+# Katalogda olmayan, File'a ozel bir urun -- gramaji adinda oldugu icin
+# sistem "1 L" ifadesini cozup birim fiyati hesaplayabilir:
+[tarih: 2026-07-30]
+[file]
+Dost Tam Yağlı Süt 1 L | 41,50
