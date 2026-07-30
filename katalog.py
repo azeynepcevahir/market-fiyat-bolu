@@ -1335,7 +1335,66 @@ function cizZamanSerisi() {
            kalan satirlar "urun adi | fiyat".
    Urun adi katalogla eslestirilir; eslesmezse yeni urun olarak eklenir.  */
 
+/*  Market sitesinden KOPYALANAN ham metni bizim bicime cevirir.
+    Beklenen kalip:
+        [Urun Adi](https://.../urun-slug)
+        -%12                      <- varsa atlanir
+        ~~159,00 TL~~139,00 TL    <- indirimliyse IKINCI fiyat alinir
+    ya da
+        [Urun Adi](https://...)
+        59,95 TL
+    Menu, footer, kategori linkleri gibi fiyati olmayan baglantilar elenir.
+    Boylece sayfayi olduğu gibi yapistirmak yeterli oluyor.               */
+function site_metni_cevir(metin) {
+  const satirlar = metin.split(/\r?\n/);
+  const cikti = [];
+  const fiyatKalip = /(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:TL|₺)/g;
+
+  for (let i = 0; i < satirlar.length; i++) {
+    const bag = satirlar[i].trim().match(/^\[([^\]]{2,120})\]\((https?:\/\/[^)]+)\)$/);
+    if (!bag) continue;
+    let ad = bag[1].trim();
+
+    // Sonraki birkac satirda fiyat ara (arada -%12, kampanya etiketi olabilir)
+    let fiyat = null;
+    for (let j = i + 1; j < Math.min(i + 4, satirlar.length); j++) {
+      const s = satirlar[j].trim();
+      if (!s || /^-?%\d+$/.test(s)) continue;
+      if (/^\[/.test(s)) break;                 // sonraki urune gectik
+      const hepsi = [...s.matchAll(fiyatKalip)];
+      if (hepsi.length) {
+        // Indirimliyse son rakam guncel fiyattir
+        const ham = hepsi[hepsi.length - 1][1];
+        fiyat = parseFloat(ham.replace(/\./g, "").replace(",", "."));
+        break;
+      }
+      if (s.length > 40) break;                 // duz metin, fiyat degil
+    }
+    if (!fiyat || fiyat <= 0) continue;         // fiyatsiz baglanti: menu vb.
+
+    // "Kg" / "Adet" tek basina gramaj sayilmaz; miktar ekleyelim ki
+    // birim fiyat hesaplanabilsin.
+    if (/\bkg\.?$/i.test(ad)) ad = ad.replace(/\bkg\.?$/i, "1 Kg");
+    else if (/\badet\.?$/i.test(ad)) ad = ad.replace(/\badet\.?$/i, "1 Adet");
+    else if (/\bkg\b/i.test(ad) && !/\d\s*kg/i.test(ad)) ad += " 1 Kg";
+    else if (/\badet\b/i.test(ad) && !/\d\s*(adet|'?l[iuü])/i.test(ad)) ad += " 1 Adet";
+
+    cikti.push(`${ad} | ${fiyat.toFixed(2).replace(".", ",")}`);
+  }
+  return cikti;
+}
+
 function toplu_coz(metin) {
+  // Ham site metni yapistirilmissa once kendi bicimimize cevir
+  if (/\]\(https?:\/\//.test(metin)) {
+    const cevrilen = site_metni_cevir(metin);
+    if (cevrilen.length) {
+      const basliklar = metin.split(/\r?\n/)
+        .filter((s) => /^\s*\[[^\]]+\]\s*$/.test(s.trim()));
+      metin = cevrilen.join("\n");
+    }
+  }
+
   const kodlar = Object.keys(D.elle_marketler || {});
   let market = kodlar[0] || "file";
   let tarih = null;

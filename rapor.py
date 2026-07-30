@@ -41,6 +41,8 @@ MIN_KAPSAM = 0.80
 MARKET_ADLARI = {
     "bim": "BİM", "sok": "ŞOK", "a101": "A101", "migros": "Migros",
     "carrefour": "CarrefourSA", "tarim_kredi": "Tarım Kredi", "hakmar": "Hakmar",
+    # marketfiyati'de yok, kendi acik API'sinden otomatik cekiliyor
+    "ozdilek": "Özdilek",
 }
 
 

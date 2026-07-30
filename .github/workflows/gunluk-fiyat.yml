@@ -58,6 +58,17 @@ jobs:
             python topla.py --hepsi --sinir 300
           fi
 
+      # 3) Ozdilek Bolu magazasi. marketfiyati'de yok; kendi acik API'sinden
+      #    cekiliyor. Fiyatlar magazaya ozel (Bolu ile Bursa farkli).
+      - name: Özdilek Bolu fiyatlarını çek
+        run: python ozdilek.py
+        continue-on-error: true      # Ozdilek duserse gunluk cekim aksamasin
+
+      # 4) Bizim Toptan. Sunucu tarafinda render edildigi icin API gerekmiyor.
+      - name: Bizim Toptan fiyatlarını çek
+        run: python bizimtoptan.py
+        continue-on-error: true
+
       - name: Alışveriş sayfasını üret
         run: python katalog.py
 

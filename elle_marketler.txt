@@ -28,8 +28,10 @@
 # =====================================================================
 
 
+# DIKKAT: Ozdilek artik OTOMATIK cekiliyor (py ozdilek.py).
+# Buraya yazmayin, yoksa elle girdiginiz fiyat otomatik cekilenle karisir.
+
 file        | File
-ozdilek     | Özdilek
 nuhmar      | Nuhmar
 basgimpa    | Başgimpa
 adese       | Adese
