@@ -1204,6 +1204,24 @@ function toplu_eslestir(ad) {
   return aday.slice(0, 8);
 }
 
+/*  Girilen fiyat, o urunun bilinen fiyatlarindan asiri sapiyorsa uyarir.
+    Iki tipik hatayi yakalar:
+      * ekran goruntusunden yanlis okunan rakam (149,00 -> 14,90)
+      * satir toplaminin birim fiyat sanilmasi (0,5 kg tutari girilmesi)
+    Uyari engellemez, sadece isaretler -- gercekten uc fiyatlar da olabilir. */
+function supheli(urunIndeksi, fiyat) {
+  const t = U[urunIndeksi][6];
+  if (!t || !t.length) return null;
+  const enUcuz = t[0][1], enPahali = t[t.length - 1][1];
+  if (fiyat < enUcuz / 2.5) {
+    return `çok düşük — bu ürün en ucuz ${para(enUcuz)}. Satır toplamı girmiş olabilirsiniz`;
+  }
+  if (fiyat > enPahali * 2.5) {
+    return `çok yüksek — bu ürün en pahalı ${para(enPahali)}. Rakam yanlış okunmuş olabilir`;
+  }
+  return null;
+}
+
 let topluHazir = [];
 
 function toplu_onizle(metin) {
@@ -1231,6 +1249,11 @@ function toplu_onizle(metin) {
     if (bul.length === 1) {
       durum = "eslesti";
       aciklama = U[bul[0]][0];
+      // Ekran goruntusunden okunan fiyatlarda iki hata sik: rakam yanlis
+      // okunmasi ve satir toplaminin birim fiyat sanilmasi. Ikisi de
+      // fiyati mevcutlardan cok uzaga dusurur -- yakalayip uyaralim.
+      const s = supheli(bul[0], k.fiyat);
+      if (s) { durum = "supheli"; aciklama = U[bul[0]][0] + " — " + s; }
       topluHazir.push({urun_id: U[bul[0]][9], baslik: U[bul[0]][0],
                        market: k.market, fiyat: k.fiyat, tarih: k.tarih});
     } else if (bul.length > 1) {
@@ -1253,8 +1276,8 @@ function toplu_onizle(metin) {
                        market: k.market, fiyat: k.fiyat, tarih: k.tarih});
     }
 
-    const renk = {eslesti: "iyi", yeni: "", belirsiz: "firsat"}[durum];
-    const isaret = {eslesti: "✓", yeni: "＋", belirsiz: "?"}[durum];
+    const renk = {eslesti: "iyi", yeni: "", belirsiz: "firsat", supheli: "firsat"}[durum];
+    const isaret = {eslesti: "✓", yeni: "＋", belirsiz: "?", supheli: "⚠"}[durum];
     return `<div class="urun" style="align-items:flex-start">
       <div class="bilgi"><div class="ad">${isaret} ${kacir(k.ad)}</div>
         <div class="alt"><span class="rozet ${renk}">${kacir(marketAdi)}</span>${
