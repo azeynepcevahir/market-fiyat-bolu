@@ -955,6 +955,9 @@ function bekleyenKaydet() {
 }
 
 async function elleGonder(kayit) {
+  // Girisin tarihi kaydin kendisinde tasinsin: baskasina gonderildiginde
+  // "eski fiyat yeniyi ezmesin" kurali ancak boyle isleyebilir.
+  if (!kayit.tarih) kayit.tarih = new Date().toISOString().slice(0, 10);
   if (!sunucuVar) { bekleyen.push(kayit); bekleyenKaydet(); return {yerel: true}; }
   try {
     const r = await (await fetch("/api/elle", {
@@ -1136,15 +1139,26 @@ el("#elleIceAl").onclick = async () => {
     return;
   }
   if (!Array.isArray(kayitlar) || !kayitlar.length) { alert("Kayıt yok."); return; }
-  let ok = 0;
+
+  const sayac = {eklendi: 0, guncellendi: 0, atlandi: 0, hata: 0};
+  const atlananlar = [];
   for (const k of kayitlar) {
     const r = await (await fetch("/api/elle", {method: "POST",
       headers: {"Content-Type": "application/json"}, body: JSON.stringify(k)})).json();
-    if (!r.hata) ok++;
+    if (r.hata) { sayac.hata++; continue; }
+    sayac[r.durum || "eklendi"]++;
+    if (r.durum === "atlandi") atlananlar.push(`${k.baslik || k.urun_id}: ${r.mesaj}`);
   }
+
   el("#elleYapistir").value = "";
   await cizKayitli();
-  alert(`${ok}/${kayitlar.length} kayıt içeri alındı. Yeni fiyatlar için sayfayı yenileyin (F5).`);
+
+  let ozet = `${sayac.eklendi} yeni, ${sayac.guncellendi} güncellendi`;
+  if (sayac.atlandi) ozet += `, ${sayac.atlandi} atlandı (sizdeki kayıt daha yeni)`;
+  if (sayac.hata) ozet += `, ${sayac.hata} hata`;
+  if (atlananlar.length) ozet += "\n\nAtlananlar:\n" + atlananlar.slice(0, 8).join("\n");
+  ozet += "\n\nYeni fiyatlar için sayfayı yenileyin (F5).";
+  alert(ozet);
 };
 
 /* ---------- sunucu modu ----------

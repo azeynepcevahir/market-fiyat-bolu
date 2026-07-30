@@ -162,9 +162,27 @@ def elle_kaydet(veri: dict) -> dict:
             if not var:
                 return {"hata": "Ürün bulunamadı."}
 
-        market.elle_fiyat_yaz(baglanti, urun_id, market_kodu, fiyat)
+        # Gelen kaydin tarihi (arkadastan/telefondan aktarilmis olabilir).
+        # Yoksa bugun kabul edilir.
+        yeni_tarih = (veri.get("tarih") or date.today().isoformat())[:10]
+
+        # Daha ESKI bir fiyat, daha YENISINI ezmesin. Iki kisi ayni urune
+        # fiyat girdiginde sessizce veri kaybolmasin diye.
+        eski = baglanti.execute(
+            "SELECT fiyat, tarih FROM elle_fiyat WHERE urun_id = ? AND market = ?",
+            (urun_id, market_kodu),
+        ).fetchone()
+        if eski and eski["tarih"] > yeni_tarih:
+            return {"tamam": True, "durum": "atlandi", "urun_id": urun_id,
+                    "mesaj": f"Zaten daha yeni bir kayıt var ({eski['tarih']}, "
+                             f"{eski['fiyat']:.2f} TL). Değiştirilmedi."}
+
+        durum = "guncellendi" if eski else "eklendi"
+        market.elle_fiyat_yaz(baglanti, urun_id, market_kodu, fiyat, yeni_tarih)
         adet = market.elle_disa_aktar(baglanti)
-        return {"tamam": True, "urun_id": urun_id, "kayit_sayisi": adet}
+        return {"tamam": True, "durum": durum, "urun_id": urun_id,
+                "kayit_sayisi": adet,
+                "onceki": eski["fiyat"] if eski else None}
     finally:
         baglanti.close()
 
