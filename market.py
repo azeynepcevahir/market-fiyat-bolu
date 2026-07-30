@@ -355,6 +355,40 @@ CREATE TABLE IF NOT EXISTS elle_fiyat (
     PRIMARY KEY (urun_id, market)
 );
 
+-- ISTATISTIK ---------------------------------------------------------
+--
+-- Ham 'fiyat' tablosu gunde ~16.600 satir buyuyor (~7 MB). Yil sonunda
+-- 2,5 GB olurdu. O yuzden ham veri 45 gunle sinirlanip uzun vadeli
+-- istatistik su iki kucuk tabloda tutuluyor:
+--
+--   gunluk_endeks : grup+market basina gunluk medyan birim fiyat
+--                   (~55 grup x 8 market = gunde ~440 satir)
+--   takip_fiyat   : favori urunlerin gunluk fiyati, tam degeriyle
+--                   (~30 urun x 8 market = gunde ~240 satir)
+--
+-- Boylece "su kategori bu ay ne kadar zamlandi" ve "aldigim urunun fiyati
+-- nasil degisti" sorulari yillar sonra bile cevaplanabilir.
+
+CREATE TABLE IF NOT EXISTS gunluk_endeks (
+    tarih        TEXT NOT NULL,
+    market       TEXT NOT NULL,
+    grup         TEXT NOT NULL,
+    urun_sayisi  INTEGER,
+    medyan_birim REAL,
+    ortalama     REAL,
+    PRIMARY KEY (tarih, market, grup)
+);
+
+CREATE TABLE IF NOT EXISTS takip_fiyat (
+    tarih   TEXT NOT NULL,
+    urun_id TEXT NOT NULL,
+    market  TEXT NOT NULL,
+    fiyat   REAL NOT NULL,
+    PRIMARY KEY (tarih, urun_id, market)
+);
+
+CREATE INDEX IF NOT EXISTS idx_endeks_tarih ON gunluk_endeks (tarih);
+CREATE INDEX IF NOT EXISTS idx_takip_urun   ON takip_fiyat (urun_id);
 CREATE INDEX IF NOT EXISTS idx_kelime ON urun_kelime (kelime);
 CREATE INDEX IF NOT EXISTS idx_fiyat_tarih ON fiyat (tarih);
 CREATE INDEX IF NOT EXISTS idx_fiyat_urun  ON fiyat (urun_id);
@@ -545,6 +579,78 @@ HASSAS_IPUCLARI = (
 def hassas_ipucu_var(baslik: str) -> bool:
     metin = sadelestir(baslik or "")
     return any(ipucu in metin for ipucu in HASSAS_IPUCLARI)
+
+
+# Ham fiyat kayitlarinin saklanma suresi. Bu suredem eskiler silinir;
+# uzun vadeli istatistik gunluk_endeks ve takip_fiyat tablolarinda kalir.
+HAM_VERI_GUN = 45
+
+
+def istatistik_isle(baglanti: sqlite3.Connection, tarih: str,
+                    takip_edilen: list[str] | None = None) -> dict:
+    """
+    O gunun fiyatlarindan gunluk ozetleri uretir ve eski ham veriyi budar.
+
+    Her cekimin sonunda calisir. Ayni gun icin tekrar calisirsa ozet
+    yeniden hesaplanir (INSERT OR REPLACE), mukerrer kayit olusmaz.
+    """
+    # --- grup + market bazinda medyan birim fiyat ---
+    satirlar = baglanti.execute(
+        """
+        SELECT f.market AS market, u.grup AS grup, f.birim_fiyat AS bf
+        FROM fiyat f JOIN urun u ON u.urun_id = f.urun_id
+        WHERE f.tarih = ? AND f.birim_fiyat IS NOT NULL AND u.grup IS NOT NULL
+        """,
+        (tarih,),
+    ).fetchall()
+
+    kovalar: dict[tuple[str, str], list[float]] = {}
+    for s in satirlar:
+        kovalar.setdefault((s["market"], s["grup"]), []).append(s["bf"])
+
+    endeks = []
+    for (market_kodu, grup), degerler in kovalar.items():
+        degerler.sort()
+        orta = len(degerler) // 2
+        medyan = (degerler[orta] if len(degerler) % 2
+                  else (degerler[orta - 1] + degerler[orta]) / 2)
+        endeks.append((tarih, market_kodu, grup, len(degerler), medyan,
+                       sum(degerler) / len(degerler)))
+
+    baglanti.executemany(
+        "INSERT OR REPLACE INTO gunluk_endeks "
+        "(tarih, market, grup, urun_sayisi, medyan_birim, ortalama) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        endeks,
+    )
+
+    # --- takip edilen (favori) urunlerin tam fiyati ---
+    takip = 0
+    if takip_edilen:
+        yer = ",".join("?" * len(takip_edilen))
+        kayitlar = baglanti.execute(
+            f"""
+            SELECT urun_id, market, MIN(fiyat) AS fiyat
+            FROM fiyat WHERE tarih = ? AND urun_id IN ({yer})
+            GROUP BY urun_id, market
+            """,
+            [tarih, *takip_edilen],
+        ).fetchall()
+        baglanti.executemany(
+            "INSERT OR REPLACE INTO takip_fiyat (tarih, urun_id, market, fiyat) "
+            "VALUES (?, ?, ?, ?)",
+            [(tarih, k["urun_id"], k["market"], k["fiyat"]) for k in kayitlar],
+        )
+        takip = len(kayitlar)
+
+    # --- eski ham veriyi buda ---
+    silinen = baglanti.execute(
+        "DELETE FROM fiyat WHERE tarih < date(?, ?)",
+        (tarih, f"-{HAM_VERI_GUN} days"),
+    ).rowcount
+
+    baglanti.commit()
+    return {"endeks": len(endeks), "takip": takip, "silinen": silinen}
 
 
 ELLE_MARKET_YOLU = PROJE / "elle_marketler.txt"

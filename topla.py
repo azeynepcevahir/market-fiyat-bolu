@@ -15,6 +15,7 @@ Tam sepet ~90 kelime x ~2 sayfa ~= 6-8 dakika surer. Bu normaldir.
 
 from __future__ import annotations
 
+import json
 import sys
 from collections import Counter
 from datetime import date
@@ -122,6 +123,7 @@ def topla(secili_gruplar: list[str] | None = None) -> None:
         yaz("  Muhtemelen kategori adi yanlis. Dogrusunu ogrenmek icin:")
         yaz("      py topla.py --kesfet <o gruptaki bir kelime>")
 
+    _istatistik_yaz(baglanti, bugun)
     _adaylari_yaz(baglanti, bugun)
     baglanti.close()
     yaz("\nBitti.  Rapor icin:  py rapor.py")
@@ -305,9 +307,38 @@ def hepsini_topla(istek_siniri: int | None = None, sifirla: bool = False) -> Non
     for ad, adet in kategoriler.most_common(15):
         yaz(f"  {adet:5d}  {ad}")
 
+    _istatistik_yaz(baglanti, bugun)
     _adaylari_yaz(baglanti, bugun)
     baglanti.close()
     yaz("\nBitti.  Sayfayi uretmek icin:  py katalog.py")
+
+
+def _istatistik_yaz(baglanti, bugun: str) -> None:
+    """
+    Gunluk ozetleri uretir ve eski ham veriyi budar.
+
+    Her cekimin sonunda cagrilir. Zaman serisi istatistikleri (kategori
+    endeksleri, favori urunlerin fiyat gecmisi) buradan birikir.
+    """
+    takip = []
+    yol = market.PROJE / "favoriler.json"
+    if yol.exists():
+        try:
+            veri = json.loads(yol.read_text(encoding="utf-8"))
+            if isinstance(veri, list):
+                takip = [str(x) for x in veri]
+        except (ValueError, OSError):
+            pass
+
+    sonuc = market.istatistik_isle(baglanti, bugun, takip)
+    yaz(f"\nIstatistik: {sonuc['endeks']} grup/market ozeti"
+        + (f", {sonuc['takip']} favori fiyati" if sonuc["takip"] else "")
+        + (f", {sonuc['silinen']} eski kayit budandi" if sonuc["silinen"] else ""))
+
+    gun = baglanti.execute(
+        "SELECT COUNT(DISTINCT tarih) n FROM gunluk_endeks"
+    ).fetchone()["n"]
+    yaz(f"Istatistik gecmisi: {gun} gun")
 
 
 def _adaylari_yaz(baglanti, bugun: str) -> None:

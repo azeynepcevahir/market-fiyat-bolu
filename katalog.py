@@ -77,6 +77,77 @@ def nitelik_coz(baslik: str) -> str:
     return "+".join(bulunan)
 
 
+ENDEKS_GUN = 90       # zaman serisinde gosterilecek en fazla gun
+ENDEKS_GRUP = 24      # zaman serisine girecek grup sayisi (en cok urunlu)
+
+
+def istatistik_verisi() -> dict:
+    """
+    Zaman serisi ozetlerini sayfaya gomulecek kompakt bicime cevirir.
+
+    Ham fiyat gecmisi gomulmez -- cok buyuk olurdu. Onun yerine gunluk
+    medyan birim fiyat serileri konur: hem market genelinde, hem de en
+    cok urunlu gruplar icin. Bu, "su kategori bu ay ne kadar zamlandi"
+    sorusunu birkac kilobayta sigdiriyor.
+    """
+    baglanti = market.veritabani()
+    try:
+        gunler = [s["tarih"] for s in baglanti.execute(
+            "SELECT DISTINCT tarih FROM gunluk_endeks ORDER BY tarih DESC LIMIT ?",
+            (ENDEKS_GUN,))]
+        gunler.reverse()
+        if not gunler:
+            return {"gunler": [], "market": {}, "grup": {}, "takip": {}}
+
+        yer = ",".join("?" * len(gunler))
+        satirlar = baglanti.execute(
+            f"""SELECT tarih, market, grup, urun_sayisi, medyan_birim
+                FROM gunluk_endeks WHERE tarih IN ({yer})""", gunler).fetchall()
+
+        # En cok urunlu gruplar
+        agirlik: dict[str, int] = {}
+        for s in satirlar:
+            agirlik[s["grup"]] = agirlik.get(s["grup"], 0) + (s["urun_sayisi"] or 0)
+        secili = sorted(agirlik, key=lambda g: -agirlik[g])[:ENDEKS_GRUP]
+
+        gun_yeri = {t: i for i, t in enumerate(gunler)}
+        market_seri: dict[str, list] = {}
+        grup_seri: dict[str, dict[str, list]] = {}
+
+        # Market geneli: gunluk medyanlarin medyani
+        havuz: dict[tuple[str, str], list[float]] = {}
+        for s in satirlar:
+            if s["medyan_birim"] is None:
+                continue
+            havuz.setdefault((s["tarih"], s["market"]), []).append(s["medyan_birim"])
+            if s["grup"] in secili:
+                d = grup_seri.setdefault(s["grup"], {})
+                dizi = d.setdefault(s["market"], [None] * len(gunler))
+                dizi[gun_yeri[s["tarih"]]] = round(s["medyan_birim"], 2)
+
+        for (t, m), degerler in havuz.items():
+            degerler.sort()
+            orta = len(degerler) // 2
+            medyan = (degerler[orta] if len(degerler) % 2
+                      else (degerler[orta - 1] + degerler[orta]) / 2)
+            market_seri.setdefault(m, [None] * len(gunler))[gun_yeri[t]] = round(medyan, 2)
+
+        # Favori urunlerin fiyat gecmisi
+        takip: dict[str, dict[str, list]] = {}
+        for s in baglanti.execute(
+            f"SELECT tarih, urun_id, market, fiyat FROM takip_fiyat WHERE tarih IN ({yer})",
+            gunler,
+        ):
+            d = takip.setdefault(s["urun_id"], {})
+            dizi = d.setdefault(s["market"], [None] * len(gunler))
+            dizi[gun_yeri[s["tarih"]]] = round(s["fiyat"], 2)
+
+        return {"gunler": gunler, "market": market_seri,
+                "grup": grup_seri, "takip": takip}
+    finally:
+        baglanti.close()
+
+
 def veriyi_hazirla() -> dict:
     """Katalogu tarayiciya gomulecek kompakt bicime cevirir."""
     baglanti = market.veritabani()
@@ -155,6 +226,7 @@ def veriyi_hazirla() -> dict:
 
     return {
         "tarih": tarih,
+        "ist": istatistik_verisi(),
         "elle_tarih": elle_tarih,
         "sube_sayisi": sube_sayisi,
         "marketler": market_kodlari,
@@ -252,6 +324,7 @@ button.yildiz.dolu{color:#f0a500}
   <button data-s="sepet">Sepet (<span id="rozetSayi">0</span>)</button>
   <button data-s="sonuc">Sonuç</button>
   <button data-s="firsat">Fırsat</button>
+  <button data-s="istatistik">📊</button>
   <button data-s="elle">✎ Elle<span id="elleRozet"></span></button>
   <button data-s="guncelle" id="sekmeGuncelle" style="display:none">⟳ Güncelle</button>
 </div>
@@ -316,6 +389,10 @@ Yumurta gibi her marketin kendi markasını sattığı ürünlerde bu olmadan ka
     farklı çeşit veya veri hatası olabilir.
   </div>
   <div id="firsatListe"></div>
+</div>
+
+<div class="sayfa" id="sayfa-istatistik">
+  <div id="istIcerik"></div>
 </div>
 
 <div class="sayfa" id="sayfa-elle">
@@ -444,6 +521,9 @@ Piyale Burgu Makarna 500 Gr | 17,50</pre>
 <script>
 const D = JSON.parse(document.getElementById("veri").textContent);
 const MARKET = D.market_adlari;
+// market kodu -> gorunen ad (istatistik serilerinde kod kullaniliyor)
+const MARKET_KOD = {};
+(D.marketler || []).forEach((k, i) => { MARKET_KOD[k] = D.market_adlari[i]; });
 // urun dizisi:
 // [0 baslik, 1 gramaj, 2 grup, 3 gid, 4 birim, 5 miktar,
 //  6 [[marketIdx, fiyat], ...], 7 boy (S/M/L/XL), 8 nitelik (organik+gezen...)]
@@ -591,6 +671,7 @@ document.querySelectorAll(".sekmeler button").forEach((b) => {
     if (b.dataset.s === "sepet") cizSepet();
     if (b.dataset.s === "favori") cizFavoriler();
     if (b.dataset.s === "elle") { cizElleFavoriler(); cizBekleyen(); cizKayitli(); }
+    if (b.dataset.s === "istatistik") cizIstatistik();
     window.scrollTo(0, 0);
   };
 });
@@ -1078,6 +1159,174 @@ async function cizKayitli() {
       cizKayitli();
     };
   });
+}
+
+/* ---------- istatistik ----------
+   Iki kaynak var:
+     * Bugunku veri (U dizisi) -> market kazanma oranlari, kategori farklari
+     * Zaman serisi (D.ist)    -> gunluk medyan birim fiyat gecmisi
+   Ikincisi her cekimde birikiyor; bugun tek gun varsa grafik yerine
+   "kac gun sonra anlamli olacak" bilgisi gosterilir.                      */
+
+let istCizildi = false;
+
+function cizIstatistik() {
+  if (istCizildi) return;
+  istCizildi = true;
+
+  // --- bugunku veriden hesaplananlar ---
+  const kazanan = new Array(MARKET.length).fill(0);   // kac uruntte en ucuz
+  const varlik  = new Array(MARKET.length).fill(0);   // kac urunde bulunuyor
+  const grupBilgi = new Map();
+  let karsilastirilabilir = 0, farkToplam = 0, oranToplam = 0;
+
+  for (const u of U) {
+    const t = u[6];
+    t.forEach((p) => varlik[p[0]]++);
+    if (t.length > 1) {
+      karsilastirilabilir++;
+      kazanan[t[0][0]]++;
+      const fark = t[t.length - 1][1] - t[0][1];
+      const oran = t[t.length - 1][1] ? fark / t[t.length - 1][1] : 0;
+      farkToplam += fark; oranToplam += oran;
+      const g = grupBilgi.get(u[2]) || {n: 0, oran: 0, fark: 0};
+      g.n++; g.oran += oran; g.fark += fark;
+      grupBilgi.set(u[2], g);
+    }
+  }
+
+  const ortOran = karsilastirilabilir ? oranToplam / karsilastirilabilir : 0;
+  const ortFark = karsilastirilabilir ? farkToplam / karsilastirilabilir : 0;
+
+  let h = `<div class="kart" style="padding:14px">
+    <h3 style="margin:0 0 10px;font-size:15px">Genel</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+      ${[["Ürün", U.length.toLocaleString("tr-TR")],
+         ["Market", MARKET.length],
+         ["Karşılaştırılabilir", karsilastirilabilir.toLocaleString("tr-TR")],
+         ["Ortalama fark", "%" + Math.round(ortOran * 100)],
+         ["Ortalama tutar farkı", para(ortFark)],
+         ["Fiyat tarihi", tarihYaz(D.tarih)]].map(([a, b]) =>
+        `<div><div class="kucuk">${a}</div>
+         <div style="font-size:19px;font-weight:700">${b}</div></div>`).join("")}
+    </div></div>`;
+
+  // --- market siralamasi ---
+  const siralama = MARKET.map((ad, i) => ({
+    ad, i, kazanan: kazanan[i], varlik: varlik[i],
+    oran: varlik[i] ? kazanan[i] / varlik[i] : 0,
+  })).sort((a, b) => b.kazanan - a.kazanan);
+  const enCok = Math.max(...siralama.map((s) => s.kazanan), 1);
+
+  h += `<div class="kart" style="padding:14px;margin-top:12px">
+    <h3 style="margin:0 0 4px;font-size:15px">Hangi market daha sık ucuz</h3>
+    <div class="kucuk" style="margin-bottom:10px">Birden fazla markette bulunan
+      ${karsilastirilabilir.toLocaleString("tr-TR")} üründe, kaçında en ucuz olduğu.</div>` +
+    siralama.map((s) => `
+      <div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <b>${kacir(s.ad)}</b>
+          <span>${s.kazanan.toLocaleString("tr-TR")} üründe en ucuz
+            <span class="kucuk">· ${s.varlik.toLocaleString("tr-TR")} üründe var</span></span>
+        </div>
+        <div style="background:#eef1f5;border-radius:99px;height:8px;margin-top:3px">
+          <div style="background:#0b7a3b;height:100%;border-radius:99px;
+               width:${(s.kazanan / enCok * 100).toFixed(1)}%"></div>
+        </div>
+      </div>`).join("") + "</div>";
+
+  // --- kategori farklari ---
+  const gruplar = [...grupBilgi.entries()]
+    .filter(([, g]) => g.n >= 5)
+    .map(([ad, g]) => ({ad, n: g.n, oran: g.oran / g.n, fark: g.fark / g.n}))
+    .sort((a, b) => b.oran - a.oran).slice(0, 20);
+
+  h += `<div class="kart" style="padding:14px;margin-top:12px">
+    <h3 style="margin:0 0 4px;font-size:15px">Marketler arası farkın en büyük olduğu kategoriler</h3>
+    <div class="kucuk" style="margin-bottom:8px">Aynı ürünün marketten markete
+      ne kadar değiştiği. Yüksek olanlarda market seçimi çok kazandırır.</div>
+    <table><tr><th>Kategori</th><th class="sag">Ürün</th>
+      <th class="sag">Ort. fark</th><th class="sag">Tutar</th></tr>` +
+    gruplar.map((g) => `<tr><td>${kacir(g.ad)}</td>
+      <td class="sag kucuk">${g.n}</td>
+      <td class="sag"><b>%${Math.round(g.oran * 100)}</b></td>
+      <td class="sag kucuk">${para(g.fark)}</td></tr>`).join("") + "</table></div>";
+
+  // --- zaman serisi ---
+  h += cizZamanSerisi();
+
+  el("#istIcerik").innerHTML = h;
+  el("#istIcerik").querySelectorAll(".seriSec").forEach((s) => {
+    s.onchange = () => { istCizildi = false; seriGrup = s.value; cizIstatistik(); };
+  });
+}
+
+let seriGrup = "";
+
+function cizZamanSerisi() {
+  const ist = D.ist || {gunler: []};
+  const gun = ist.gunler || [];
+
+  if (gun.length < 2) {
+    return `<div class="kart" style="padding:14px;margin-top:12px">
+      <h3 style="margin:0 0 6px;font-size:15px">Zaman içindeki değişim</h3>
+      <div class="kucuk">Şu ana kadar <b>${gun.length} gün</b> kayıt var.
+      Zaman grafiği için en az iki güne ihtiyaç var; her gün otomatik olarak
+      bir gün ekleniyor. Bir hafta sonra haftalık, bir ay sonra aylık değişimi
+      buradan göreceksiniz.<br><br>
+      Kaydedilenler: her kategori ve market için günlük medyan birim fiyat,
+      ayrıca favori ürünlerinizin tam fiyatı.</div></div>`;
+  }
+
+  const seri = seriGrup ? (ist.grup[seriGrup] || {}) : (ist.market || {});
+  const kodlar = Object.keys(seri);
+  const tumDeger = kodlar.flatMap((k) => seri[k].filter((v) => v != null));
+  if (!tumDeger.length) return "";
+
+  const enAz = Math.min(...tumDeger), enCok = Math.max(...tumDeger);
+  const G = 640, Y = 190, kenar = 34;
+  const x = (i) => kenar + i * (G - kenar * 2) / Math.max(1, gun.length - 1);
+  const y = (v) => Y - 22 - (v - enAz) / (enCok - enAz || 1) * (Y - 48);
+  const renk = ["#0b7a3b", "#b3261e", "#1a56c4", "#a8710a", "#6b2fb3",
+                "#0f7b8a", "#b3005c", "#4a5568"];
+
+  let svg = `<svg viewBox="0 0 ${G} ${Y}" style="width:100%;height:auto">
+    <line x1="${kenar}" y1="${Y - 22}" x2="${G - kenar}" y2="${Y - 22}"
+          stroke="#d9dee6"/>`;
+  kodlar.forEach((k, n) => {
+    const noktalar = seri[k].map((v, i) => v == null ? null : `${x(i)},${y(v)}`)
+                            .filter(Boolean).join(" ");
+    if (noktalar) {
+      svg += `<polyline points="${noktalar}" fill="none"
+               stroke="${renk[n % renk.length]}" stroke-width="2"
+               stroke-linejoin="round"/>`;
+    }
+  });
+  svg += `<text x="${kenar}" y="12" font-size="10" fill="#7b8494">${
+            para(enCok)}</text>
+          <text x="${kenar}" y="${Y - 6}" font-size="10" fill="#7b8494">${
+            tarihYaz(gun[0])}</text>
+          <text x="${G - kenar}" y="${Y - 6}" font-size="10" fill="#7b8494"
+            text-anchor="end">${tarihYaz(gun[gun.length - 1])}</text></svg>`;
+
+  const gosterge = kodlar.map((k, n) =>
+    `<span style="white-space:nowrap;margin-right:10px;font-size:12px">
+      <span style="display:inline-block;width:10px;height:3px;vertical-align:middle;
+       background:${renk[n % renk.length]}"></span>
+      ${kacir(MARKET_KOD[k] || k)}</span>`).join("");
+
+  const gruplar = Object.keys(ist.grup || {}).sort();
+  return `<div class="kart" style="padding:14px;margin-top:12px">
+    <h3 style="margin:0 0 4px;font-size:15px">Zaman içindeki değişim</h3>
+    <div class="kucuk">Günlük medyan birim fiyat. ${gun.length} günlük kayıt.</div>
+    <div class="ayar" style="margin:8px 0">
+      <label>Kapsam: <select class="seriSec">
+        <option value="">Tüm katalog</option>
+        ${gruplar.map((g) => `<option value="${kacir(g)}"${
+          g === seriGrup ? " selected" : ""}>${kacir(g)}</option>`).join("")}
+      </select></label>
+    </div>
+    ${svg}<div style="margin-top:6px">${gosterge}</div></div>`;
 }
 
 /* ---------- dosyadan toplu aktarma ----------
