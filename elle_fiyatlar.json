@@ -1,1 +1,272 @@
-[]
+[
+ {
+  "urun_id": "00JQ",
+  "market": "file",
+  "fiyat": 29.9,
+  "tarih": "2026-07-30",
+  "baslik": "Kırkağaç Kavun 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "04QS",
+  "market": "file",
+  "fiyat": 94.9,
+  "tarih": "2026-07-30",
+  "baslik": "Kayısı 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "0Q7Q",
+  "market": "file",
+  "fiyat": 24.9,
+  "tarih": "2026-07-30",
+  "baslik": "Salatalık 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "102P",
+  "market": "file",
+  "fiyat": 59.9,
+  "tarih": "2026-07-30",
+  "baslik": "Kabak 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "12A1",
+  "market": "file",
+  "fiyat": 44.9,
+  "tarih": "2026-07-30",
+  "baslik": "Patlıcan 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "1CFS",
+  "market": "file",
+  "fiyat": 99.9,
+  "tarih": "2026-07-30",
+  "baslik": "Kırmızı Erik 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1IQ0",
+  "market": "file",
+  "fiyat": 54.9,
+  "tarih": "2026-07-30",
+  "baslik": "Salkım Domates 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "1ISV",
+  "market": "file",
+  "fiyat": 149.0,
+  "tarih": "2026-07-30",
+  "baslik": "Domates Pembe 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "1IYC",
+  "market": "file",
+  "fiyat": 49.9,
+  "tarih": "2026-07-30",
+  "baslik": "Galya Kavun 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1KDM",
+  "market": "file",
+  "fiyat": 225.0,
+  "tarih": "2026-07-30",
+  "baslik": "Çilek 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1M71",
+  "market": "file",
+  "fiyat": 79.9,
+  "tarih": "2026-07-30",
+  "baslik": "Şeftali 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1MZQ",
+  "market": "file",
+  "fiyat": 39.9,
+  "tarih": "2026-07-30",
+  "baslik": "Çengelköy Salatalık 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "1NCL",
+  "market": "file",
+  "fiyat": 44.9,
+  "tarih": "2026-07-30",
+  "baslik": "Patates 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "1OJD",
+  "market": "file",
+  "fiyat": 19.5,
+  "tarih": "2026-07-30",
+  "baslik": "Karpuz Çekirdeksiz 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1P2T",
+  "market": "file",
+  "fiyat": 74.9,
+  "tarih": "2026-07-30",
+  "baslik": "Mango 1 Adet",
+  "marka": "Markasız",
+  "gramaj": "",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1PJY",
+  "market": "file",
+  "fiyat": 99.9,
+  "tarih": "2026-07-30",
+  "baslik": "İthal Muz 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1PM0",
+  "market": "file",
+  "fiyat": 79.9,
+  "tarih": "2026-07-30",
+  "baslik": "Nektarin 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1PV7",
+  "market": "file",
+  "fiyat": 109.0,
+  "tarih": "2026-07-30",
+  "baslik": "Starking Elma 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1U5E",
+  "market": "file",
+  "fiyat": 59.9,
+  "tarih": "2026-07-30",
+  "baslik": "Havuç 1 Kg",
+  "marka": "Markasız",
+  "gramaj": "1 KG",
+  "grup": "Sebze"
+ },
+ {
+  "urun_id": "1X2V",
+  "market": "file",
+  "fiyat": 94.9,
+  "tarih": "2026-07-30",
+  "baslik": "Ananas 1 Adet",
+  "marka": "Markasız",
+  "gramaj": "",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "1YKR",
+  "market": "file",
+  "fiyat": 59.9,
+  "tarih": "2026-07-30",
+  "baslik": "Avokado 1 Adet",
+  "marka": "Markasız",
+  "gramaj": "",
+  "grup": "Meyve"
+ },
+ {
+  "urun_id": "elle-1731867235",
+  "market": "file",
+  "fiyat": 84.9,
+  "tarih": "2026-07-30",
+  "baslik": "Lamas Limon 1 Kg",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
+  "urun_id": "elle-5076516534",
+  "market": "file",
+  "fiyat": 19.9,
+  "tarih": "2026-07-30",
+  "baslik": "Mısır 1 Adet",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
+  "urun_id": "elle-5337521721",
+  "market": "file",
+  "fiyat": 42.5,
+  "tarih": "2026-07-30",
+  "baslik": "Domates 1 Kg",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
+  "urun_id": "elle-5426095332",
+  "market": "file",
+  "fiyat": 84.9,
+  "tarih": "2026-07-30",
+  "baslik": "İstiridye Kayın Mantarı 200 Gr",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
+  "urun_id": "elle-7025628499",
+  "market": "file",
+  "fiyat": 135.0,
+  "tarih": "2026-07-30",
+  "baslik": "Lumandıra Jersey Pastörize Süt 1 Lt",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ },
+ {
+  "urun_id": "elle-9057127739",
+  "market": "file",
+  "fiyat": 59.9,
+  "tarih": "2026-07-30",
+  "baslik": "Kallavi Kavun 1 Kg",
+  "marka": "",
+  "gramaj": "",
+  "grup": "Elle eklenen"
+ }
+]
