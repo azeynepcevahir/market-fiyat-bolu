@@ -671,6 +671,18 @@ def elle_ice_aktar(baglanti: sqlite3.Connection) -> int:
     if not isinstance(kayitlar, list):
         return 0
 
+    # Dosya, elle girilen fiyatlarin TEK dogru kaynagidir. Actions artik
+    # veritabanini onbellekte sakladigi icin, burada silinen bir fiyat
+    # dosyadan cikmis olsa bile onbellekteki kayitta kalirdi. O yuzden
+    # dosyada olmayanlari temizliyoruz.
+    gecerli = {(k.get("urun_id"), k.get("market") or "diger") for k in kayitlar}
+    for satir in baglanti.execute("SELECT urun_id, market FROM elle_fiyat").fetchall():
+        if (satir["urun_id"], satir["market"]) not in gecerli:
+            baglanti.execute(
+                "DELETE FROM elle_fiyat WHERE urun_id = ? AND market = ?",
+                (satir["urun_id"], satir["market"]),
+            )
+
     sayi = 0
     for k in kayitlar:
         urun_id = k.get("urun_id")
