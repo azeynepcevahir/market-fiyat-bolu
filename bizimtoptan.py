@@ -61,6 +61,11 @@ _son_istek = [0.0]
 _RE_KART = re.compile(
     r"""data-enhanced-productclick\s*=\s*(?:'([^']+)'|"([^"]+)")""", re.S)
 
+# Kart HTML'indeki urun fotografi (tembel yukleme icin data-src de olabilir)
+_RE_RESIM = re.compile(
+    r"""<img[^>]+(?:data-src|src)\s*=\s*["']([^"']+)["']|<img[^>]+srcset\s*=\s*["']([^"'\s]+)""",
+    re.IGNORECASE)
+
 # "36 g 36'li" gibi coklu paketler: birim miktar x paket adedi
 _RE_COKLU_PAKET = re.compile(
     r"(\d+(?:[.,]\d+)?)\s*(kg|gr?|lt|l|ml|cl)\b[^0-9]{0,12}?(\d+)\s*['’]?\s*l[iıuü]\b",
@@ -94,13 +99,24 @@ def _istek(yol: str) -> str:
 
 
 def _sayfadaki_urunler(icerik: str) -> list[dict]:
-    """Urun kartlarindaki gomulu JSON'lari cikarir."""
+    """Urun kartlarindaki gomulu JSON'lari (ve varsa fotografi) cikarir."""
     urunler = []
-    for tek, cift in _RE_KART.findall(icerik):
+    for eslesme in _RE_KART.finditer(icerik):
+        tek, cift = eslesme.group(1), eslesme.group(2)
         try:
             veri = json.loads(html.unescape(tek or cift))
         except ValueError:
             continue
+
+        # Fotograf gomulu JSON'da yok; ayni kartin HTML'inde araniyor.
+        # Tembel yukleme kullanildigi icin data-src de kontrol ediliyor.
+        resim = None
+        pencere = icerik[eslesme.end(): eslesme.end() + 1200]
+        gorsel = _RE_RESIM.search(pencere)
+        if gorsel:
+            url = (gorsel.group(1) or gorsel.group(2) or "").strip()
+            if url and not url.startswith("data:"):
+                resim = url if url.startswith("http") else KOK + "/" + url.lstrip("/")
         ad = (veri.get("item_name") or "").strip()
         try:
             fiyat = float(str(veri.get("price")).replace(",", "."))
@@ -115,6 +131,7 @@ def _sayfadaki_urunler(icerik: str) -> list[dict]:
             "grup": (veri.get("item_category3") or veri.get("item_category")
                      or "Bizim Toptan").strip(),
             "fiyat": fiyat,
+            "resim": resim,
         })
     return urunler
 
@@ -209,6 +226,7 @@ def cek(istek_siniri: int | None = None, coklu_dahil: bool = False) -> dict:
                 urun_satirlari.append((
                     urun_id, u["ad"], u["marka"], u["grup"], None, miktar, birim,
                     market.isim_belirteci(u["ad"], u["marka"]), ilk_kelime, u["grup"],
+                    u.get("resim"),
                 ))
                 kelime_satirlari.append((urun_id, ilk_kelime, u["grup"]))
                 fiyat_satirlari.append((
@@ -219,8 +237,8 @@ def cek(istek_siniri: int | None = None, coklu_dahil: bool = False) -> dict:
 
             baglanti.executemany(
                 "INSERT OR REPLACE INTO urun (urun_id, baslik, marka, ana_kategori, "
-                "gramaj_ham, miktar, birim, isim_anahtari, arama_kelimesi, grup) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", urun_satirlari)
+                "gramaj_ham, miktar, birim, isim_anahtari, arama_kelimesi, grup, resim) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", urun_satirlari)
             baglanti.executemany(
                 "INSERT OR REPLACE INTO urun_kelime (urun_id, kelime, grup) "
                 "VALUES (?, ?, ?)", kelime_satirlari)

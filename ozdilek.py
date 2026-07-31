@@ -139,11 +139,20 @@ def cek(istek_siniri: int | None = None) -> dict:
             if miktar is None:
                 gramajsiz += 1
 
+            # Urun fotografi: birden fazla boy geliyor, kucuk olani yeter
+            resim = None
+            for g in (u.get("images") or []):
+                url = g.get("url") or ""
+                if url:
+                    resim = url if url.startswith("http") else "https://www.ozdilekteyim.com" + url
+                    if g.get("format") in ("thumbnail", "product", "cartIcon"):
+                        break
+
             urun_id = f"ozdilek-{kod}"
             urun_satirlari.append((
                 urun_id, ad, marka, grup, None, miktar, birim,
                 market.isim_belirteci(duzeltilmis, marka),
-                market.kucult(ad).split()[0] if ad else "", grup,
+                market.kucult(ad).split()[0] if ad else "", grup, resim,
             ))
             kelime_satirlari.append((urun_id, market.kucult(ad).split()[0] if ad else "", grup))
             fiyat_satirlari.append((
@@ -155,8 +164,8 @@ def cek(istek_siniri: int | None = None) -> dict:
 
         baglanti.executemany(
             "INSERT OR REPLACE INTO urun (urun_id, baslik, marka, ana_kategori, "
-            "gramaj_ham, miktar, birim, isim_anahtari, arama_kelimesi, grup) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", urun_satirlari)
+            "gramaj_ham, miktar, birim, isim_anahtari, arama_kelimesi, grup, resim) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", urun_satirlari)
         baglanti.executemany(
             "INSERT OR REPLACE INTO urun_kelime (urun_id, kelime, grup) VALUES (?, ?, ?)",
             kelime_satirlari)

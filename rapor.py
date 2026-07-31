@@ -85,7 +85,7 @@ def teklifleri_yukle(baglanti, tarih: str) -> list[dict]:
     satirlar = baglanti.execute(
         """
         SELECT u.urun_id, u.baslik, u.marka, u.ana_kategori, u.gramaj_ham,
-               u.miktar, u.birim, u.isim_anahtari, u.arama_kelimesi, u.grup,
+               u.miktar, u.birim, u.isim_anahtari, u.arama_kelimesi, u.grup, u.resim,
                f.market, f.fiyat, f.birim_fiyat, f.indirim, f.promosyon, f.guncelleme
         FROM fiyat f
         JOIN urun u ON u.urun_id = f.urun_id

@@ -148,6 +148,15 @@ def istatistik_verisi() -> dict:
         baglanti.close()
 
 
+def _resim_kisalt(adres: str | None, onek_indeksi: dict[str, int]):
+    """Tam adresi [onek indeksi, dosya adi] ciftine indirger."""
+    if not adres or "/" not in adres:
+        return None
+    onek, _, dosya = adres.rpartition("/")
+    yer = onek_indeksi.get(onek + "/")
+    return [yer, dosya] if yer is not None else None
+
+
 def veriyi_hazirla() -> dict:
     """Katalogu tarayiciya gomulecek kompakt bicime cevirir."""
     baglanti = market.veritabani()
@@ -178,8 +187,14 @@ def veriyi_hazirla() -> dict:
                 "birim": t["birim"] or "",
                 "miktar": t["miktar"],
                 "gid": rapor.grup_anahtari(t),
+                "resim": None,
                 "fiyatlar": {},
             }
+        if not kayit["resim"]:
+            try:
+                kayit["resim"] = t["resim"]
+            except (KeyError, IndexError):
+                pass
         mevcut = kayit["fiyatlar"].get(t["market"])
         if mevcut is None or t["fiyat"] < mevcut:
             kayit["fiyatlar"][t["market"]] = t["fiyat"]
@@ -190,6 +205,21 @@ def veriyi_hazirla() -> dict:
         anahtar = kayit["gid"]
         if anahtar not in grup_indeksi:
             grup_indeksi[anahtar] = len(grup_indeksi)
+
+    # --- Fotograf adreslerini sikistir ---
+    # Adreslerin cogu ayni klasoru paylasiyor (cdn.marketfiyati.org.tr/sokimages/...).
+    # Onekleri bir kez yazip urunlerde sadece indeks + dosya adi tutuyoruz;
+    # duz saklamak ~1,2 MB ederdi, boyle ~200 KB'a iniyor.
+    onek_indeksi: dict[str, int] = {}
+    onekler: list[str] = []
+    for kayit in urunler.values():
+        r = kayit.get("resim")
+        if not r or "/" not in r:
+            continue
+        onek = r.rsplit("/", 1)[0] + "/"
+        if onek not in onek_indeksi:
+            onek_indeksi[onek] = len(onekler)
+            onekler.append(onek)
 
     satirlar = []
     for kayit in urunler.values():
@@ -208,6 +238,7 @@ def veriyi_hazirla() -> dict:
             boy_coz(kayit["baslik"]),
             nitelik_coz(kayit["baslik"]),
             kayit["urun_id"],   # sunucuya favori bildirirken gerekiyor
+            _resim_kisalt(kayit.get("resim"), onek_indeksi),
         ])
 
     # Cok markette bulunanlar aramada one ciksin
@@ -231,6 +262,7 @@ def veriyi_hazirla() -> dict:
         "sube_sayisi": sube_sayisi,
         "marketler": market_kodlari,
         "market_adlari": [rapor.market_adi(k) for k in market_kodlari],
+        "resim_onekleri": onekler,
         "elle_marketler": market.elle_marketleri_oku(),
         "ziyaret_maliyeti": rapor.ZIYARET_MALIYETI,
         "min_kapsam": rapor.MIN_KAPSAM,
@@ -276,6 +308,9 @@ button.sil{background:none;border:none;color:#b3261e;font-size:22px;cursor:point
 button.yildiz{background:none;border:none;font-size:21px;cursor:pointer;padding:0 2px;
      color:#c2c9d3;line-height:1}
 button.yildiz.dolu{color:#f0a500}
+.urun-resim{object-fit:contain;border-radius:6px;background:#fff;flex:none;
+     border:1px solid #eef1f5}
+.resim-yok{background:#f1f3f6;border-radius:6px;flex:none;border:1px solid #e6e9ee}
 .adet{display:flex;align-items:center;gap:6px}
 .adet button{width:30px;height:30px;border-radius:7px;border:1px solid #c8cfd9;background:#fff;
      font-size:17px;cursor:pointer;font-family:inherit;line-height:1}
@@ -339,6 +374,9 @@ button.yildiz.dolu{color:#f0a500}
     <label title="İşaretlerseniz sadece en az iki markette bulunan ürünler listelenir.
 Yumurta gibi her marketin kendi markasını sattığı ürünlerde bu neredeyse hiçbir şey bırakmaz.">
       <input type="checkbox" id="sadeceCok"> sadece 2+ markette olanlar</label>
+    <label title="Fotoğraflar marketlerin sunucularından gelir; internet gerektirir.
+Çevrimdışıyken kapalı tutun.">
+      <input type="checkbox" id="resimAnahtar"> fotoğrafları göster</label>
   </div>
   <div id="sonuclar"><div class="bos">Ürün aramak için yukarıya yazın.</div></div>
 </div>
@@ -526,8 +564,31 @@ const MARKET_KOD = {};
 (D.marketler || []).forEach((k, i) => { MARKET_KOD[k] = D.market_adlari[i]; });
 // urun dizisi:
 // [0 baslik, 1 gramaj, 2 grup, 3 gid, 4 birim, 5 miktar,
-//  6 [[marketIdx, fiyat], ...], 7 boy (S/M/L/XL), 8 nitelik (organik+gezen...)]
+//  6 [[marketIdx, fiyat], ...], 7 boy (S/M/L/XL), 8 nitelik (organik+gezen...),
+//  9 urun_id, 10 [onekIndeksi, dosyaAdi] fotograf]
 const U = D.urunler;
+
+/*  Fotograflar indirilmiyor, marketlerin kendi sunucularindan geliyor.
+    Bu yuzden CEVRIMDISI GORUNMEZLER -- sayfa yine calisir, yerleri bos kalir.
+    Varsayilan kapali; markette cekim zayifsa acmayin.                      */
+let resimAcik = localStorage.getItem("marketResim") === "1";
+
+function resimAdresi(u) {
+  const r = u[10];
+  if (!r || !D.resim_onekleri) return null;
+  const onek = D.resim_onekleri[r[0]];
+  return onek ? onek + r[1] : null;
+}
+
+function resimEtiketi(u, boy) {
+  if (!resimAcik) return "";
+  const a = resimAdresi(u);
+  if (!a) return `<div class="resim-yok" style="width:${boy}px;height:${boy}px"></div>`;
+  return `<img class="urun-resim" src="${kacir(a)}" alt="" loading="lazy"
+           width="${boy}" height="${boy}"
+           onerror="this.replaceWith(Object.assign(document.createElement('div'),
+                    {className:'resim-yok',style:'width:${boy}px;height:${boy}px'}))">`;
+}
 const BOY_ADI = {S: "S boy", M: "M boy", L: "L boy", XL: "XL boy", XXL: "XXL boy"};
 const NITELIK_ADI = {organik: "organik", gezen: "gezen", koy: "köy", omega: "omega-3",
   "a-sinifi": "A sınıfı", glutensiz: "glutensiz", laktozsuz: "laktozsuz",
@@ -683,6 +744,16 @@ el("#grupSuz").onchange = ara;
 el("#sadeceCok").onchange = ara;
 el("#sirala").onchange = ara;
 
+el("#resimAnahtar").checked = resimAcik;
+el("#resimAnahtar").onchange = () => {
+  resimAcik = el("#resimAnahtar").checked;
+  localStorage.setItem("marketResim", resimAcik ? "1" : "0");
+  ara();                       // acik listeleri yeniden ciz
+  istCizildi = false;
+  if (el("#sayfa-sepet").classList.contains("etkin")) cizSepet();
+  if (el("#sayfa-favori").classList.contains("etkin")) cizFavoriler();
+};
+
 function ara() {
   const ham = el("#q").value.trim();
   const grup = el("#grupSuz").value;
@@ -728,6 +799,7 @@ function urunSatiri(i) {
   return `<div class="urun">
     <button class="yildiz ${yildizli ? "dolu" : ""}" data-y="${i}"
             title="Favorilere ekle">${yildizli ? "★" : "☆"}</button>
+    ${resimEtiketi(u, 46)}
     <div class="bilgi">
       <div class="ad">${kacir(u[0])}</div>
       <div class="alt">
@@ -824,6 +896,7 @@ function cizSepet() {
   el("#sepetListe").innerHTML = '<div class="kart">' + sepet.map((k, n) => {
     const u = U[k.i];
     return `<div class="urun">
+      ${resimEtiketi(u, 40)}
       <div class="bilgi"><div class="ad">${kacir(u[0])}</div>
         <div class="alt">${kacir(u[1])} · ${u[6].length} markette</div></div>
       <div class="adet">
@@ -1002,7 +1075,7 @@ function cizSonuc() {
       liste.forEach((a) => {
         const u = U[a.urun], k = a.kalem, istenen = U[k.i];
         const bf = birimYaz(a.urun, a.tutar / k.adet);
-        h += `<div class="urun"><div class="bilgi">
+        h += `<div class="urun">${resimEtiketi(u, 40)}<div class="bilgi">
                 <div class="ad">${kacir(u[0])}${k.adet > 1 ? " ×" + k.adet : ""}</div>
                 <div class="alt">${kacir(u[1])}${bf ? " · " + bf : ""}</div>`;
         const eTarih = (D.elle_tarih || {})[u[9] + "|" + (D.marketler || [])[m]];

@@ -409,7 +409,12 @@ def _sutunlari_tamamla(baglanti: sqlite3.Connection) -> None:
     Eski veritabanlarina sonradan eklenen sutunlari ekler.
     CREATE TABLE IF NOT EXISTS mevcut tabloyu degistirmez, o yuzden gerekli.
     """
-    eklenecek = {"fiyat": [("guncelleme", "TEXT")]}
+    eklenecek = {
+        "fiyat": [("guncelleme", "TEXT")],
+        # Urun fotografinin adresi. Resimler indirilmiyor, sadece adresleri
+        # saklaniyor -- 19 bin resmi sayfaya gommek ~100 MB ederdi.
+        "urun": [("resim", "TEXT")],
+    }
     for tablo, sutunlar in eklenecek.items():
         mevcut = {s["name"] for s in baglanti.execute(f"PRAGMA table_info({tablo})")}
         for ad, tur in sutunlar:
@@ -466,6 +471,7 @@ def urun_ve_fiyat_yaz(baglanti: sqlite3.Connection, urunler: list[dict],
         urun_satirlari.append((
             urun_id, baslik, marka, kategori, ham_gramaj,
             miktar, birim, isim_belirteci(baslik, marka), arama_kelimesi, urun_grubu,
+            (urun.get("imageUrl") or "").strip() or None,
         ))
 
         for teklif in urun.get("productDepotInfoList") or []:
@@ -485,8 +491,8 @@ def urun_ve_fiyat_yaz(baglanti: sqlite3.Connection, urunler: list[dict],
 
     baglanti.executemany(
         "INSERT OR REPLACE INTO urun (urun_id, baslik, marka, ana_kategori, gramaj_ham, "
-        "miktar, birim, isim_anahtari, arama_kelimesi, grup) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "miktar, birim, isim_anahtari, arama_kelimesi, grup, resim) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         urun_satirlari,
     )
     baglanti.executemany(
