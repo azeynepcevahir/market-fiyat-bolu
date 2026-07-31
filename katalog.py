@@ -173,6 +173,14 @@ def veriyi_hazirla() -> dict:
     market_kodlari = sorted({t["market"] for t in teklifler})
     market_indeksi = {kod: i for i, kod in enumerate(market_kodlari)}
 
+    # Her marketin verisi kac gunluk (en taze teklifine bakarak). Bir market
+    # o gun cekilemediyse sayfa bunu soylesin diye.
+    market_yasi: dict[str, int] = {}
+    for t in teklifler:
+        yas = int(t.get("yas_gun") or 0)
+        if market_yasi.get(t["market"], 9999) > yas:
+            market_yasi[t["market"]] = yas
+
     # Urun bazinda topla: her markette en ucuz fiyat
     urunler: dict[str, dict] = {}
     for t in teklifler:
@@ -195,9 +203,12 @@ def veriyi_hazirla() -> dict:
                 kayit["resim"] = t["resim"]
             except (KeyError, IndexError):
                 pass
+        yas = int(t.get("yas_gun") or 0)
         mevcut = kayit["fiyatlar"].get(t["market"])
-        if mevcut is None or t["fiyat"] < mevcut:
-            kayit["fiyatlar"][t["market"]] = t["fiyat"]
+        # Once tazelik, sonra ucuzluk: dunku 10 TL, bugunku 12 TL'nin yerine
+        # gecmemeli. Ayni gunun icinde en ucuz sube kazanir.
+        if mevcut is None or (yas, t["fiyat"]) < (mevcut[1], mevcut[0]):
+            kayit["fiyatlar"][t["market"]] = (t["fiyat"], yas)
 
     # Grup anahtarlarini kisa sayilara cevir
     grup_indeksi: dict = {}
@@ -223,8 +234,11 @@ def veriyi_hazirla() -> dict:
 
     satirlar = []
     for kayit in urunler.values():
+        # Ucuncu alan sadece eski fiyatlarda var; gunceller iki elemanli
+        # kaliyor ki dosya sismesin (urunlerin cogu bugunun verisi).
         teklif_listesi = sorted(
-            ([market_indeksi[m], round(f, 2)] for m, f in kayit["fiyatlar"].items()),
+            ([market_indeksi[m], round(f, 2)] + ([y] if y else [])
+             for m, (f, y) in kayit["fiyatlar"].items()),
             key=lambda p: p[1],
         )
         satirlar.append([
@@ -262,6 +276,7 @@ def veriyi_hazirla() -> dict:
         "sube_sayisi": sube_sayisi,
         "marketler": market_kodlari,
         "market_adlari": [rapor.market_adi(k) for k in market_kodlari],
+        "market_yasi": [market_yasi.get(k, 0) for k in market_kodlari],
         "resim_onekleri": onekler,
         "elle_marketler": market.elle_marketleri_oku(),
         "ziyaret_maliyeti": rapor.ZIYARET_MALIYETI,
@@ -301,6 +316,7 @@ select{padding:8px 10px;font-size:14px;border:1px solid #c8cfd9;border-radius:8p
      background:#eef1f5;color:#5a6472;margin-right:4px}
 .rozet.iyi{background:#e6f4ec;color:#0b7a3b}
 .rozet.firsat{background:#fdecea;color:#b3261e}
+.rozet.eski{background:#fdf3e0;color:#a8710a}
 button.ekle{background:#0b7a3b;color:#fff;border:none;border-radius:8px;padding:9px 14px;
      font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;min-width:64px}
 button.ekle.eklendi{background:#dfe4ea;color:#5a6472}
@@ -564,8 +580,9 @@ const MARKET_KOD = {};
 (D.marketler || []).forEach((k, i) => { MARKET_KOD[k] = D.market_adlari[i]; });
 // urun dizisi:
 // [0 baslik, 1 gramaj, 2 grup, 3 gid, 4 birim, 5 miktar,
-//  6 [[marketIdx, fiyat], ...], 7 boy (S/M/L/XL), 8 nitelik (organik+gezen...),
+//  6 [[marketIdx, fiyat, yasGun?], ...], 7 boy (S/M/L/XL), 8 nitelik (organik+gezen...),
 //  9 urun_id, 10 [onekIndeksi, dosyaAdi] fotograf]
+// yasGun sadece BUGUNDEN ESKI fiyatlarda var (yoksa fiyat bugunun).
 const U = D.urunler;
 
 /*  Fotograflar indirilmiyor, marketlerin kendi sunucularindan geliyor.
@@ -607,6 +624,21 @@ const gunFarki = (s) => {
   const fark = (new Date(D.tarih) - new Date(s)) / 86400000;
   return isNaN(fark) ? null : Math.max(0, Math.round(fark));
 };
+
+/*  Eski fiyatlar: bir market o gun cekilemezse elimizdeki son fiyati
+    gosteriyoruz, ama tarihini soyleyerek. Sessizce eski fiyat gostermek
+    en kotusu olurdu -- markette sasirirsiniz.                          */
+const yasTarihi = (yas) => {
+  const g = new Date(D.tarih);
+  if (isNaN(g)) return "";
+  g.setDate(g.getDate() - (yas || 0));
+  return g.toISOString().slice(0, 10);
+};
+const eskiRozet = (yas) => (yas ?
+  `<span class="rozet eski" title="${yas} gün önceki fiyat">${
+    tarihYaz(yasTarihi(yas)).slice(0, 5)}</span>` : "");
+const eskiYazi = (yas) => (yas ?
+  ` · <span style="color:#a8710a">${tarihYaz(yasTarihi(yas)).slice(0, 5)} fiyatı</span>` : "");
 
 const TR = {"ı":"i","İ":"i","I":"i","ğ":"g","Ğ":"g","ü":"u","Ü":"u",
             "ş":"s","Ş":"s","ö":"o","Ö":"o","ç":"c","Ç":"c"};
@@ -707,8 +739,17 @@ const para = (n) => (n == null || isNaN(n) ? "-" :
 const kacir = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
   (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
+// Bugun cekilemeyen marketleri ustte soyle; kullanici fiyatin kac gunluk
+// oldugunu markete varmadan bilsin.
+// Elle girilenler haric: onlar zaten hep gecmis tarihli, her gun burada
+// yazsalar goz aliskanlik yapar ve gercek gecikmeyi gizler.
+const GECIKEN = (D.market_yasi || [])
+  .map((y, i) => (y && !(D.elle_marketler || {})[(D.marketler || [])[i]]
+    ? `${MARKET[i]} ${tarihYaz(yasTarihi(y)).slice(0, 5)}` : null))
+  .filter(Boolean);
 el("#ust").textContent =
-  `${U.length} ürün · ${D.sube_sayisi} şube · ${MARKET.length} market · fiyat ${D.tarih}`;
+  `${U.length} ürün · ${D.sube_sayisi} şube · ${MARKET.length} market · fiyat ${D.tarih}` +
+  (GECIKEN.length ? ` · eski veri: ${GECIKEN.join(", ")}` : "");
 const grupSecenek = '<option value="">hepsi</option>' +
   GRUPLAR.map((g) => `<option>${kacir(g)}</option>`).join("");
 el("#grupSuz").innerHTML = grupSecenek;
@@ -809,7 +850,7 @@ function urunSatiri(i) {
         ${u[8] ? `<span class="rozet">${kacir(nitelikYaz(u[8]))}</span>` : ""}
         ${kacir(u[1])}${birim ? " · " + birim : ""}
       </div>
-      <div class="alt">en ucuz: <b>${kacir(MARKET[ucuz[0]])}</b>${
+      <div class="alt">en ucuz: <b>${kacir(MARKET[ucuz[0]])}</b>${eskiYazi(ucuz[2])}${
         teklif.length > 1 ? ` · en pahalı: ${kacir(MARKET[pahali[0]])} ${para(pahali[1])}` : ""}</div>
     </div>
     <div class="fiyat"><b>${para(ucuz[1])}</b></div>
@@ -927,18 +968,18 @@ function cizSepet() {
    deneyip kesin en iyiyi buluyoruz -- yaklasik cozum degil.            */
 
 function secenekler(urunIndeksi, markaFarkOk) {
-  const enUcuz = new Map();   // marketIndeksi -> {f: fiyat, j: urun, farkli: bool}
-  const koy = (m, f, j, farkli) => {
+  const enUcuz = new Map();   // marketIndeksi -> {f: fiyat, j: urun, farkli: bool, yas: gun}
+  const koy = (m, f, j, farkli, yas) => {
     const v = enUcuz.get(m);
     // Esit fiyatta ayni markayi tercih et
     if (!v || f < v.f || (f === v.f && v.farkli && !farkli)) {
-      enUcuz.set(m, {f: f, j: j, farkli: farkli});
+      enUcuz.set(m, {f: f, j: j, farkli: farkli, yas: yas || 0});
     }
   };
 
   // 1) Ayni marka + ayni gramaj
   for (const j of GID.get(U[urunIndeksi][3]) || [urunIndeksi]) {
-    for (const [m, f] of U[j][6]) koy(m, f, j, false);
+    for (const [m, f, y] of U[j][6]) koy(m, f, j, false, y);
   }
 
   // 2) Marka tutmuyorsa: ayni gramaj, farkli marka
@@ -954,13 +995,17 @@ function secenekler(urunIndeksi, markaFarkOk) {
       let ortak = false;
       for (const k of ANA[j]) if (ana.has(k)) { ortak = true; break; }
       if (!ortak) continue;   // "elma" ile "karpuz" muadil sayilmasin
-      for (const [m, f] of U[j][6]) koy(m, f, j, true);
+      for (const [m, f, y] of U[j][6]) koy(m, f, j, true, y);
     }
   }
   return enUcuz;
 }
 
 function coz(maksMarket, ziyaret, markaFarkOk) {
+  // En az bir markete gidilecek; 0 gelirse (bozuk deger) hicbir kombinasyon
+  // denenmez ve asagisi bos elle kalirdi.
+  maksMarket = Math.max(1, +maksMarket || 1);
+  ziyaret = +ziyaret || 0;
   const kalemler = sepet.map((k) => ({
     i: k.i, adet: k.adet, sec: secenekler(k.i, markaFarkOk),
   })).filter((k) => k.sec.size > 0);
@@ -989,19 +1034,20 @@ function coz(maksMarket, ziyaret, markaFarkOk) {
     let toplam = 0;
 
     kalemler.forEach((k, idx) => {
-      let enUcuzM = -1, enUcuzF = Infinity, enUcuzJ = -1, enUcuzFarkli = false;
+      let enUcuzM = -1, enUcuzF = Infinity, enUcuzJ = -1, enUcuzFarkli = false, enUcuzYas = 0;
       k.sec.forEach((v, m) => {
         const yer = marketler.indexOf(m);
         if (!(maske & (1 << yer))) return;
         const tutar = v.f * k.adet;
         if (tutar < enUcuzF) {
-          enUcuzF = tutar; enUcuzM = m; enUcuzJ = v.j; enUcuzFarkli = v.farkli;
+          enUcuzF = tutar; enUcuzM = m; enUcuzJ = v.j;
+          enUcuzFarkli = v.farkli; enUcuzYas = v.yas;
         }
       });
       if (enUcuzM < 0) { eksikler.push(k); toplam += genelMin[idx]; return; }
       toplam += enUcuzF;
       atamalar.push({kalem: k, market: enUcuzM, urun: enUcuzJ,
-                     tutar: enUcuzF, farkli: enUcuzFarkli});
+                     tutar: enUcuzF, farkli: enUcuzFarkli, yas: enUcuzYas});
     });
 
     const kapsam = atamalar.length / kalemler.length;
@@ -1070,15 +1116,28 @@ function cizSonuc() {
     .sort((a, b) => b[1].reduce((t, x) => t + x.tutar, 0) - a[1].reduce((t, x) => t + x.tutar, 0))
     .forEach(([m, liste]) => {
       const ara = liste.reduce((t, x) => t + x.tutar, 0);
+      const enEski = liste.reduce((y, x) => Math.max(y, x.yas || 0), 0);
+      // Marketin tamami eskiyse bir kere ustte soyle; karisiksa kalem kalem.
+      const hepsiEski = liste.every((x) => x.yas);
+      // Elle girilen marketlerde zaten kalem kalem "elle girildi: tarih"
+      // yaziyor; "cekilemedi" demek yanlis olurdu, orada cekim yok.
+      const elleMarket = !!(D.elle_marketler || {})[(D.marketler || [])[m]];
       h += `<div class="kart market"><h3><span>${kacir(MARKET[m])}</span>
             <span>${liste.length} kalem · ${para(ara)}</span></h3>`;
+      if (hepsiEski && !elleMarket) {
+        h += `<div class="alt" style="padding:7px 12px;color:#a8710a;
+              background:#fdf3e0;font-size:12px">Bu marketin fiyatları bugün
+              çekilemedi; ${enEski} gün önceki (${kacir(tarihYaz(yasTarihi(enEski)))})
+              fiyatlar kullanıldı. Rafta değişmiş olabilir.</div>`;
+      }
       liste.forEach((a) => {
         const u = U[a.urun], k = a.kalem, istenen = U[k.i];
         const bf = birimYaz(a.urun, a.tutar / k.adet);
+        const eTarih = (D.elle_tarih || {})[u[9] + "|" + (D.marketler || [])[m]];
         h += `<div class="urun">${resimEtiketi(u, 40)}<div class="bilgi">
                 <div class="ad">${kacir(u[0])}${k.adet > 1 ? " ×" + k.adet : ""}</div>
-                <div class="alt">${kacir(u[1])}${bf ? " · " + bf : ""}</div>`;
-        const eTarih = (D.elle_tarih || {})[u[9] + "|" + (D.marketler || [])[m]];
+                <div class="alt">${kacir(u[1])}${bf ? " · " + bf : ""}${
+                  hepsiEski || eTarih ? "" : eskiYazi(a.yas)}</div>`;
         if (eTarih) {
           const y = gunFarki(eTarih);
           h += `<div class="alt" style="color:#a8710a">elle girildi:
@@ -1298,7 +1357,7 @@ function cizIstatistik() {
     siralama.map((s) => `
       <div style="margin-bottom:9px">
         <div style="display:flex;justify-content:space-between;font-size:13px">
-          <b>${kacir(s.ad)}</b>
+          <span><b>${kacir(s.ad)}</b> ${eskiRozet((D.market_yasi || [])[s.i])}</span>
           <span>${s.kazanan.toLocaleString("tr-TR")} üründe en ucuz
             <span class="kucuk">· ${s.varlik.toLocaleString("tr-TR")} üründe var</span></span>
         </div>

@@ -23,13 +23,12 @@
 #  Kullanmadiginiz marketi basina # koyarak gizleyebilirsiniz.
 #  Degisiklik sonrasi Baslat.bat'i kapatip tekrar acin.
 #
-#  NOT: Su alti zincir API'den OTOMATIK geliyor, buraya YAZMAYIN:
-#       A101, BIM, CarrefourSA, Migros, SOK, Tarim Kredi
+#  NOT: Su marketler OTOMATIK geliyor, buraya YAZMAYIN:
+#       A101, BIM, CarrefourSA, Migros, SOK, Tarim Kredi  (marketfiyati.org.tr)
+#       Ozdilek                                           (py ozdilek.py)
+#       Bizim Toptan                                      (py bizimtoptan.py)
+#  Buraya yazarsaniz elle girdiginiz fiyat otomatik cekilenle karisir.
 # =====================================================================
-
-
-# DIKKAT: Ozdilek artik OTOMATIK cekiliyor (py ozdilek.py).
-# Buraya yazmayin, yoksa elle girdiginiz fiyat otomatik cekilenle karisir.
 
 file        | File
 nuhmar      | Nuhmar
@@ -40,11 +39,6 @@ soykan      | Soykan Market
 cetinkaya   | Çetinkaya
 ekomini     | Ekomini
 bolavantaj  | Bol Avantaj Market
-
-# Toptanci. Gramajlar perakendeden farkli olabilir (5 kg'lik paket gibi);
-# girerken paketin gercek gramajini yazin, karsilastirma gramaja bakiyor.
-bizimtoptan | Bizim Toptan
-
 diger       | Diğer
 
 

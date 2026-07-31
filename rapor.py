@@ -17,7 +17,7 @@ from __future__ import annotations
 import html
 import sys
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from itertools import combinations
 from pathlib import Path
 
@@ -38,11 +38,17 @@ MAKS_MARKET = 2
 # Secilen market kombinasyonu, listenizin en az bu kadarini karsilamali.
 MIN_KAPSAM = 0.80
 
+# Bir market o gun cekilemezse (site coktu, ag kesildi, is atlandi) elimizdeki
+# son fiyati kullaniriz -- ama kac gunluk oldugunu her yerde soyleyerek.
+# Bunsuz, tek bir basarisiz cekim o marketi listeden tamamen dusuruyordu.
+GECMIS_GUN = 7
+
 MARKET_ADLARI = {
     "bim": "BİM", "sok": "ŞOK", "a101": "A101", "migros": "Migros",
     "carrefour": "CarrefourSA", "tarim_kredi": "Tarım Kredi", "hakmar": "Hakmar",
-    # marketfiyati'de yok, kendi acik API'sinden otomatik cekiliyor
-    "ozdilek": "Özdilek",
+    # marketfiyati'de yok, kendi sitelerinden otomatik cekiliyor
+    "ozdilek": "Özdilek",           # py ozdilek.py
+    "bizimtoptan": "Bizim Toptan",  # py bizimtoptan.py
 }
 
 
@@ -75,24 +81,55 @@ def son_tarih(baglanti) -> str | None:
     return satir["t"] if satir else None
 
 
-def teklifleri_yukle(baglanti, tarih: str) -> list[dict]:
+def teklifleri_yukle(baglanti, tarih: str, gecmis_gun: int = GECMIS_GUN) -> list[dict]:
     """
-    O tarihteki tum tekliflerin duz listesi.
+    Tekliflerin duz listesi: her (urun, market) icifin ELDEKI EN YENI fiyat,
+    en fazla `gecmis_gun` gun geriye bakarak.
+
+    Neden pencere: bir market o gun cekilemedigginde (ag kesintisi, sitenin
+    coktugu bir gun) o marketin fiyati tamamen kayboluyordu -- kullanici
+    marketin listede olmadigini goruyor, neden olmadigini bilmiyordu.
+    Simdi dunku fiyat gosteriliyor, ama 'yas_gun' ile isaretli; arayuz
+    kac gunluk oldugunu yaziyor.
+
     Beyaz liste gerektiren kategorilerde, onaylanmamis urunler ELENIR.
     """
     onayli = market.beyaz_liste_oku()
+
+    baslangic = (date.fromisoformat(tarih) - timedelta(days=max(0, gecmis_gun))).isoformat()
+
+    # Once her (urun, market) icin en yeni tarihi bul, sonra sadece o
+    # satirlari cek. Pencereyi Python'da suzmek 100 bin satiri bosuna
+    # tasirdi; bu haliyle is SQLite'ta kaliyor.
+    baglanti.execute("DROP TABLE IF EXISTS temp.son_fiyat")
+    baglanti.execute(
+        """
+        CREATE TEMP TABLE son_fiyat AS
+        SELECT urun_id, market, MAX(tarih) AS tarih
+        FROM fiyat WHERE tarih BETWEEN ? AND ?
+        GROUP BY urun_id, market
+        """,
+        (baslangic, tarih),
+    )
+    baglanti.execute(
+        "CREATE INDEX temp.son_fiyat_ix ON son_fiyat(urun_id, market, tarih)"
+    )
 
     satirlar = baglanti.execute(
         """
         SELECT u.urun_id, u.baslik, u.marka, u.ana_kategori, u.gramaj_ham,
                u.miktar, u.birim, u.isim_anahtari, u.arama_kelimesi, u.grup, u.resim,
-               f.market, f.fiyat, f.birim_fiyat, f.indirim, f.promosyon, f.guncelleme
+               f.market, f.fiyat, f.birim_fiyat, f.indirim, f.promosyon, f.guncelleme,
+               f.tarih
         FROM fiyat f
+        JOIN son_fiyat s ON s.urun_id = f.urun_id AND s.market = f.market
+                        AND s.tarih = f.tarih
         JOIN urun u ON u.urun_id = f.urun_id
-        WHERE f.tarih = ?
-        """,
-        (tarih,),
+        """
     ).fetchall()
+    baglanti.execute("DROP TABLE IF EXISTS temp.son_fiyat")
+
+    bugun = date.fromisoformat(tarih)
 
     # Bir urunun TUM arama kelimeleri (urun tablosundaki tek sutun yetmiyor,
     # cunku ayni urun birden fazla kelimeyle bulunabiliyor).
@@ -108,6 +145,10 @@ def teklifleri_yukle(baglanti, tarih: str) -> list[dict]:
         t["kelimeler"] = kelimeler.get(s["urun_id"]) or (
             {s["arama_kelimesi"]} if s["arama_kelimesi"] else set()
         )
+        try:
+            t["yas_gun"] = (bugun - date.fromisoformat(s["tarih"])).days
+        except (ValueError, TypeError):
+            t["yas_gun"] = 0
         teklifler.append(t)
 
     teklifler.extend(_elle_teklifleri(baglanti, tarih))

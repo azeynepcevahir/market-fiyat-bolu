@@ -25,6 +25,16 @@ muadili bulur, ve kaç markete uğramaya razı olduğunuza göre alışverişi d
 **Önemli:** Özdilek fiyatları mağazaya göre değişiyor. Bolu anahtarı
 `market-bolu-store`; varsayılan `market-gecit-store` Bursa'dır.
 
+**Bir market o gün çekilemezse** (ağ kesintisi, site çöker, iş atlanır)
+elimizdeki son fiyat kullanılır — en fazla 7 gün geriye (`rapor.GECMIS_GUN`).
+Fiyatın kaç günlük olduğu üst satırda, arama sonucunda ve alışveriş listesinde
+tarihiyle yazar. Bunsuz, tek bir başarısız çekim o marketi listeden tamamen
+düşürüyordu ve kullanıcı nedenini göremiyordu.
+
+**Sayfa sınaması:** `node sinama.js` — üretilen HTML'in kendi javascriptini
+sahte bir DOM içinde çalıştırıp gerçek veriyle kontrol eder. Tarayıcı açmadan
+"sayfa bozuldu mu" sorusuna cevap verir. katalog.py'ye dokunduysanız çalıştırın.
+
 ## Açık işler
 
 1. **Bizim Toptan sayfalama çözülmedi.** `?page=N` ilerlemiyor, her kategoriden
@@ -32,10 +42,14 @@ muadili bulur, ve kaç markete uğramaya razı olduğunuza göre alışverişi d
 2. **Bizim Toptan çoklu paketleri atlanıyor.** Sitedeki fiyatları tutarsız
    (aynı boy ürünün biri 45 TL, diğeri 480 TL). `--coklu-dahil` ile alınabilir
    ama önerilmez. Ayrıntı `bizimtoptan.py` içindeki nota bakın.
-3. **Zamanlanmış çalışma atlanabiliyor.** 31.07'de 07:00 UTC'deki iş hiç
+3. **Bizim Toptan adresi zaman zaman çözülmüyor.** 31.07'de yerel internet
+   sağlayıcısı `www.bizimtoptan.com.tr`'yi çözemedi (Google DNS çözüyordu).
+   Site Cloudflare arkasında. GitHub Actions başka ağdan çalıştığı için
+   oradan etkilenmiyor. Artık bir günlük kesinti veriyi düşürmüyor.
+4. **Zamanlanmış çalışma atlanabiliyor.** 31.07'de 07:00 UTC'deki iş hiç
    çalışmadı. GitHub cron'u "en iyi çaba" ile işler. Tekrarlarsa yedek tetikleyici
    düşünülebilir.
-4. **İstatistik zaman serisi yeni başladı.** `gunluk_endeks` ve `takip_fiyat`
+5. **İstatistik zaman serisi yeni başladı.** `gunluk_endeks` ve `takip_fiyat`
    her çekimde birikiyor; ham `fiyat` verisi 45 günde budanıyor. Grafikler
    birkaç hafta sonra anlamlı olacak.
 
