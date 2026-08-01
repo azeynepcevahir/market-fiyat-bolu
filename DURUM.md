@@ -35,6 +35,21 @@ düşürüyordu ve kullanıcı nedenini göremiyordu.
 sahte bir DOM içinde çalıştırıp gerçek veriyle kontrol eder. Tarayıcı açmadan
 "sayfa bozuldu mu" sorusuna cevap verir. katalog.py'ye dokunduysanız çalıştırın.
 
+## Yapılacaklar paneli
+
+Açık işlerin güncel hali `YAPILACAKLAR.html` dosyasında — çift tıklayıp açın.
+Sayıları (ürün sayısı, test sonucu, gönderilmemiş commit, verinin yaşı) üretim
+anında gerçek kaynaklardan okur, elle yazılmaz.
+
+    node tools/build-isler.mjs          paneli yenile
+    node tools/build-isler.mjs --hizli  sınamayı atla, hızlı üret
+    bash tools/bekci.sh                 saat başı kendiliğinden yenile
+
+İş bittikçe `tools/isler.json` güncellenir ve panel yeniden üretilir.
+**HTML elle düzenlenmez**, bir sonraki üretimde silinir.
+
+Aşağıdaki liste anlatı; panel ise güncel durumdur. İkisi çelişirse panel doğrudur.
+
 ## Açık işler
 
 1. **Bizim Toptan sayfalama çözülmedi.** `?page=N` ilerlemiyor, her kategoriden

@@ -1,0 +1,245 @@
+{
+  "proje": "Market Fiyat Bolu",
+  "aciklama": "Panelin veri kaynagi. Bunu duzenleyin, sonra: node tools/build-isler.mjs",
+  "durumlar": ["donuyor", "sirada", "karar", "not", "bitti"],
+  "isler": [
+    {
+      "id": "panel",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Yapılacaklar paneli",
+      "neden": "Ne yapıldığını takip etmek için her seferinde DURUM.md okumak ya da 'durum ne' diye sormak gerekiyordu. Panel tek bakışta cevap versin.",
+      "tarih": "2026-08-01",
+      "kaynak": "tools/build-isler.mjs"
+    },
+
+    {
+      "id": "push",
+      "durum": "sirada",
+      "kim": "siz",
+      "baslik": "Bekleyen commit'leri gönderin",
+      "neden": "Yayındaki site depodan besleniyor. Gönderilmeyen commit'ler bilgisayarınızda kalır, siteye ve telefona yansımaz.",
+      "kaynak": "GitHub Desktop → Push origin"
+    },
+    {
+      "id": "file-fiyat",
+      "durum": "sirada",
+      "kim": "siz",
+      "baslik": "File fiyatlarını tazeleyin",
+      "neden": "File'ın web mağazası olmadığı için fiyatları otomatik gelemiyor. Elle girilenler eskidikçe karşılaştırma yanıltıcı olur; markette beklediğinizden farklı fiyat görürsünüz.",
+      "kaynak": "Uygulamadan ekran görüntüsü → /market-fiyat-cevir"
+    },
+    {
+      "id": "nuhmar-basgimpa",
+      "durum": "sirada",
+      "kim": "siz",
+      "baslik": "Nuhmar ve Başgimpa'dan ilk fiyatlar",
+      "neden": "Menüde tanımlılar ama hiç fiyat girilmedi. Fiyatı olmayan market karşılaştırmaya hiç girmiyor, yani şu an bu iki market sistemde yok sayılıyor.",
+      "kaynak": "Sitedeki ✎ Elle sekmesi"
+    },
+
+    {
+      "id": "bt-sayfalama",
+      "durum": "sirada",
+      "kim": "ben",
+      "baslik": "Bizim Toptan sayfalaması",
+      "neden": "?page=N parametresi ilerlemiyor, her kategoriden sadece ilk sayfa geliyor. Doğru parametre bulunursa 276 üründen birkaç bine çıkar.",
+      "kaynak": "bizimtoptan.py"
+    },
+    {
+      "id": "cron-yedek",
+      "durum": "sirada",
+      "kim": "ben",
+      "baslik": "Sabahki iş atlanırsa yedek tetikleyici",
+      "neden": "31.07'de GitHub'ın zamanlanmış işi hiç çalışmadı; cron 'en iyi çaba' ile işliyor, garanti vermiyor. Atlanan gün fiyatların bir gün eskimesi demek.",
+      "kaynak": ".github/workflows/gunluk-fiyat.yml"
+    },
+    {
+      "id": "diger-marketler",
+      "durum": "sirada",
+      "kim": "ben",
+      "baslik": "Diğer Bolu marketleri otomatikleşebilir mi",
+      "neden": "Adese, Seç Market, Soykan, Çetinkaya, Ekomini, Bol Avantaj elle giriliyor. Özdilek ve Bizim Toptan'da olduğu gibi açık bir uç nokta varsa elle giriş yükü kalkar.",
+      "kaynak": "elle_marketler.txt"
+    },
+
+    {
+      "id": "karar-yayin",
+      "durum": "karar",
+      "kim": "siz",
+      "baslik": "Bu panel siteye de konsun mu",
+      "neden": "Şu an sadece OneDrive'da; telefondan OneDrive uygulamasıyla açılır. docs/ klasörüne koyarsam GitHub Pages'te herkese açık olur — proje notlarınız da görünür hale gelir. Karar sizin.",
+      "kaynak": "node tools/build-isler.mjs --yayin"
+    },
+    {
+      "id": "karar-ziyaret",
+      "durum": "karar",
+      "kim": "siz",
+      "baslik": "Bir markete uğramanın maliyeti 25 TL doğru mu",
+      "neden": "Sistem 'iki markete gitmeye değer mi' kararını bu sayıyla veriyor. Yüksek tutarsanız sizi tek markete gönderir, düşük tutarsanız daha çok gezdirir. Yakıt ve zamanınızın gerçek karşılığı ne?",
+      "kaynak": "rapor.ZIYARET_MALIYETI"
+    },
+
+    {
+      "id": "not-ozdilek-magaza",
+      "durum": "not",
+      "baslik": "Özdilek'in Bolu anahtarı market-bolu-store",
+      "neden": "Varsayılan mağaza market-gecit-store, o Bursa'dır. Yanlış anahtarla çekilirse fiyatlar sessizce başka şehrin fiyatı olur — hata vermez, sadece yanlış olur.",
+      "kaynak": "ozdilek.py"
+    },
+    {
+      "id": "not-bt-coklu",
+      "durum": "not",
+      "baslik": "Bizim Toptan çoklu paketleri alınmıyor",
+      "neden": "Sitedeki çoklu paket fiyatları tutarsız (aynı ürünün biri 45 TL, diğeri 480 TL). Tutarsız veriyi almaktansa atlamak daha doğru; --coklu-dahil ile açılabilir.",
+      "kaynak": "bizimtoptan.py"
+    },
+    {
+      "id": "not-push-site",
+      "durum": "not",
+      "baslik": "Kodu göndermek siteyi güncellemez",
+      "neden": "Sayfayı GitHub Actions üretiyor. Push'tan sonra site hemen değişmez; ya sabahki çalışmayı beklersiniz ya Actions sekmesinden elle tetiklersiniz.",
+      "kaynak": ".github/workflows/gunluk-fiyat.yml"
+    },
+    {
+      "id": "not-elle-commit",
+      "durum": "not",
+      "baslik": "Elle girilen fiyatlar commit edilmezse yayında görünmez",
+      "neden": "Elle fiyatlar elle_fiyatlar.json ile depoya taşınıyor. Girip commit etmezseniz sadece kendi bilgisayarınızda kalır, telefondaki sayfada çıkmaz.",
+      "kaynak": "elle_fiyatlar.json"
+    },
+    {
+      "id": "not-istatistik",
+      "durum": "not",
+      "baslik": "İstatistik grafikleri birkaç hafta sonra anlam kazanır",
+      "neden": "Zaman serisi 29.07'de başladı. İki günlük veriyle çizilen grafik trend göstermez; yapılacak bir şey yok, beklemek var.",
+      "kaynak": "gunluk_endeks tablosu"
+    },
+
+    {
+      "id": "eski-fiyat",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Bir gün çekilemeyen market listeden düşmesin",
+      "neden": "Sayfa tek günün anlık görüntüsüydü; bir market o gün çekilemezse tamamen kayboluyordu ve nedeni görünmüyordu. Artık son bilinen fiyat 7 güne kadar kullanılıyor, tarihi her yerde yazıyor.",
+      "tarih": "2026-07-31",
+      "kaynak": "rapor.GECMIS_GUN"
+    },
+    {
+      "id": "sinama",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Sayfa sınaması",
+      "neden": "katalog.py'deki bir değişiklik sayfayı sessizce bozabiliyordu: HTML üretilir, hata çıkmaz, ama sayfa açılınca boş kalır. Sınama üretilen HTML'in kendi javascriptini çalıştırıp kontrol ediyor.",
+      "tarih": "2026-07-31",
+      "kaynak": "sinama.js"
+    },
+    {
+      "id": "fotograf",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Ürün fotoğrafları",
+      "neden": "Yazıyla ürün ayırt etmek zor. Resimler indirilmiyor, marketlerin adresleri saklanıyor; varsayılan kapalı ki sayfa markette internetsiz de çalışsın.",
+      "tarih": "2026-07-31",
+      "kaynak": "urun.resim"
+    },
+    {
+      "id": "bizimtoptan",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Bizim Toptan otomatik çekimi",
+      "neden": "Toptancı fiyatları perakendeden ucuz olabiliyor; elle girmek yerine sitenin HTML'ine gömülü veriden okunuyor.",
+      "tarih": "2026-07-30",
+      "kaynak": "bizimtoptan.py"
+    },
+    {
+      "id": "ozdilek",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Özdilek otomatik çekimi",
+      "neden": "Elle girmeye başlamıştınız, sayfa sayfa uğraşıyordunuz. Kendi API'si açık çıktı; 9.992 ürün her gün kendiliğinden geliyor.",
+      "tarih": "2026-07-30",
+      "kaynak": "ozdilek.py"
+    },
+    {
+      "id": "toplu-aktarma",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Toplu fiyat aktarma ve çevirme yeteneği",
+      "neden": "Elle fiyatı tek tek girmek çok yavaştı. Ekran görüntüsünü yapıştırıp içe aktarılabilir biçime çeviren bir yetenek eklendi.",
+      "tarih": "2026-07-30",
+      "kaynak": ".claude/skills/market-fiyat-cevir"
+    },
+    {
+      "id": "istatistik",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "İstatistik sayfası",
+      "neden": "Hangi market genelde ucuz, hangi grupta fark büyük — tek tek ürüne bakmadan görebilmek için.",
+      "tarih": "2026-07-30",
+      "kaynak": "katalog.py"
+    },
+    {
+      "id": "elle-giris",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Elle fiyat girişi",
+      "neden": "Bolu'daki zincirlerin çoğu hiçbir fiyat servisinde yok. Girdiğiniz fiyat tarihiyle saklanıyor ki eskiyeni fark edilsin.",
+      "tarih": "2026-07-29",
+      "kaynak": "elle_fiyat tablosu"
+    },
+    {
+      "id": "favori",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Favoriler",
+      "neden": "Her alışverişte aynı ürünleri aramak zaman kaybıydı; düzenli aldıklarınız bir listede dursun, oradan sepete eklensin.",
+      "tarih": "2026-07-29",
+      "kaynak": "katalog.py"
+    },
+    {
+      "id": "site",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Alışveriş sitesi arayüzü",
+      "neden": "Rapor okumak yerine alışveriş yapar gibi sepet oluşturup 'hangi markete gideyim' cevabını almak istediniz.",
+      "tarih": "2026-07-29",
+      "kaynak": "Market-Sepet.html"
+    },
+    {
+      "id": "gunluk-cekim",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Günlük otomatik çekim",
+      "neden": "Bilgisayarı açık bırakmadan fiyatların tazelenmesi için; her sabah 10:00'da GitHub'ın makinesinde çalışıyor.",
+      "tarih": "2026-07-29",
+      "kaynak": ".github/workflows/gunluk-fiyat.yml"
+    },
+    {
+      "id": "marka-esdeger",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Aynı gramaj, farklı marka eşleştirmesi",
+      "neden": "Yumurtada 28 üründen 27'si markete özel markaydı; 'aynı marka' kuralı orada hiç çalışmıyordu. Boy ve nitelik tutmak şartıyla muadil aranıyor.",
+      "tarih": "2026-07-29",
+      "kaynak": "rapor.py"
+    },
+    {
+      "id": "tam-katalog",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Tüm katalog çekimi",
+      "neden": "Sadece sepet listesindeki kelimelerle sınırlı kalınca aramada olmayan ürünler çıkmıyordu. Marka ağacı gezilerek katalog genişletildi.",
+      "tarih": "2026-07-29",
+      "kaynak": "topla.py --hepsi"
+    },
+    {
+      "id": "file-otomatik",
+      "durum": "not",
+      "baslik": "File otomatik çekimi denendi, vazgeçildi",
+      "neden": "Web mağazası yok, sadece mobil uygulama. API'nin uç noktaları bilinmiyor; bulmak için telefonda trafik yakalamak gerekir ve sertifika sabitlemeye takılabilir. Elle giriş tercih edildi.",
+      "tarih": "2026-07-30",
+      "kaynak": "DURUM.md"
+    }
+  ]
+}

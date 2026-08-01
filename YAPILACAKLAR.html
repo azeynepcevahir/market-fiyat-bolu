@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yapılacaklar — Market Fiyat Bolu</title>
+<style>
+:root{
+  --zemin:#f4f6f8; --kart:#ffffff; --cizgi:#dde2e9; --yazi:#14181f; --soluk:#6b7484;
+  --koyu:#14181f; --yesil:#0b7a3b; --sari:#a8710a; --kirmizi:#b3261e; --mavi:#2b4b80;
+  --vurgu:#eef1f5;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --zemin:#0f1216; --kart:#181c22; --cizgi:#2b323d; --yazi:#e8ecf2; --soluk:#9aa3b1;
+    --koyu:#000000; --yesil:#4cbd82; --sari:#d9a13a; --kirmizi:#e8705f; --mavi:#7aa5e8;
+    --vurgu:#22272f;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--zemin);color:var(--yazi);line-height:1.55;
+  font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+header{background:var(--koyu);color:#fff;padding:16px 0}
+.kap{max-width:880px;margin:0 auto;padding:0 15px}
+header h1{margin:0;font-size:17px;font-weight:600}
+header .alt{font-size:11.5px;opacity:.62;margin-top:3px}
+.olcumler{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px;
+  margin:15px 0 4px}
+.olcum{background:var(--kart);border:1px solid var(--cizgi);border-radius:11px;padding:11px 13px}
+.olcum.yok{opacity:.72}
+.olcum .ad{font-size:11.5px;color:var(--soluk);text-transform:uppercase;letter-spacing:.03em}
+.olcum .deger{font-size:23px;font-weight:700;line-height:1.25;margin-top:2px}
+.olcum .cubuk{height:6px;background:var(--vurgu);border-radius:99px;overflow:hidden;margin:6px 0 2px}
+.olcum .cubuk div{height:100%;background:var(--yesil);border-radius:99px}
+.olcum .formul{font-size:11.5px;color:var(--soluk);margin-top:5px;
+  padding-left:8px;border-left:2px solid var(--cizgi)}
+.olcum .not{font-size:12px;color:var(--soluk);margin-top:5px}
+.olcum .kaynak{font-size:10.5px;color:var(--soluk);opacity:.75;margin-top:6px;
+  font-family:ui-monospace,Consolas,monospace}
+.tur{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:6px;
+  letter-spacing:0;text-transform:none}
+.tur.ilerleme{background:rgba(11,122,59,.13);color:var(--yesil)}
+.tur.kapsam{background:rgba(43,75,128,.13);color:var(--mavi)}
+.aciklama{font-size:12.5px;color:var(--soluk);margin:9px 0 4px;
+  border-left:2px solid var(--cizgi);padding-left:9px}
+h2{font-size:15px;margin:22px 0 1px;display:flex;align-items:center;gap:8px}
+h2 .adet{font-size:11px;font-weight:600;color:var(--soluk);background:var(--vurgu);
+  border-radius:99px;padding:1px 8px}
+.altbaslik{font-size:11.5px;color:var(--soluk);margin-bottom:8px}
+.kart{background:var(--kart);border:1px solid var(--cizgi);border-radius:11px;overflow:hidden}
+.is{display:flex;gap:11px;padding:11px 13px;border-bottom:1px solid var(--cizgi)}
+.is:last-child{border-bottom:none}
+.im{width:9px;height:9px;border-radius:50%;flex:none;margin-top:7px;background:var(--soluk)}
+.donuyor .im{background:var(--sari);box-shadow:0 0 0 3px rgba(168,113,10,.16)}
+.sirada .im{background:var(--mavi)}
+.karar .im{background:var(--kirmizi);box-shadow:0 0 0 3px rgba(179,38,30,.13)}
+.not .im{background:var(--soluk);opacity:.5}
+.bitti .im{background:var(--yesil)}
+.is .baslik{font-size:14px;font-weight:600}
+.is .neden{font-size:12.5px;color:var(--soluk);margin-top:2px}
+.is .kaynak{margin-top:4px}
+.bitti .is{opacity:.6}
+.bitti .is .baslik{font-weight:500;text-decoration:line-through;
+  text-decoration-color:var(--soluk);text-decoration-thickness:1px}
+.rozet{display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;
+  border-radius:99px;margin-left:7px;vertical-align:2px}
+.rozet.siz{background:rgba(179,38,30,.13);color:var(--kirmizi)}
+.rozet.ben{background:rgba(43,75,128,.13);color:var(--mavi)}
+.rozet.tarih{background:var(--vurgu);color:var(--soluk)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11px;background:var(--vurgu);
+  padding:1px 6px;border-radius:5px;color:var(--soluk)}
+footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
+</style></head><body>
+
+<header><div class="kap">
+  <h1>Yapılacaklar — Market Fiyat Bolu</h1>
+  <div class="alt">01.08.2026 19:38'de üretildi ·
+    sayılar bu anda gerçek kaynaklardan okundu</div>
+</div></header>
+
+<div class="kap">
+  <div class="olcumler"><div class="olcum">
+    <div class="ad">Görev ilerlemesi<span class="tur ilerleme">ilerleme</span></div>
+    <div class="deger">64%</div>
+    <div class="cubuk"><div style="width:63.6%"></div></div>
+    <div class="formul">14 biten iş ÷ 22 toplam iş (biten + açık). &quot;Açık kalan not&quot; maddeleri iş sayılmadığı için paydada yok.</div>
+    
+    <div class="kaynak">kaynak: tools/isler.json</div></div><div class="olcum">
+    <div class="ad">Sizi bekleyen</div>
+    <div class="deger">5</div>
+    
+    
+    <div class="not">Bekleyen commit&#39;leri gönderin · File fiyatlarını tazeleyin · Nuhmar ve Başgimpa&#39;dan ilk fiyatlar · Bu panel siteye de konsun mu · Bir markete uğramanın maliyeti 25 TL doğru mu</div>
+    <div class="kaynak">kaynak: tools/isler.json</div></div><div class="olcum">
+    <div class="ad">Katalogdaki ürün</div>
+    <div class="deger">24.109</div>
+    
+    
+    <div class="not">9 market · fiyat tarihi 2026-07-31</div>
+    <div class="kaynak">kaynak: Alisveris/Market-Sepet.html</div></div><div class="olcum">
+    <div class="ad">Son çekimde gelen market<span class="tur kapsam">kapsam</span></div>
+    <div class="deger">7/8</div>
+    
+    <div class="formul">Otomatik çekilen marketlerin kaçı verinin son gününde (2026-07-31) gelebildi. Bu bir ilerleme değil, o günkü durum — yüzdeye çevirmek yanıltıcı olur.</div>
+    <div class="not">Bizim Toptan 1 gün eski</div>
+    <div class="kaynak">kaynak: Alisveris/Market-Sepet.html</div></div><div class="olcum">
+    <div class="ad">Fiyat verisinin yaşı</div>
+    <div class="deger">1 gün eski</div>
+    
+    
+    <div class="not">veri tarihi 2026-07-31 · dosya 31.07.2026 13:19 · 4.6 MB</div>
+    <div class="kaynak">kaynak: Alisveris/Market-Sepet.html</div></div><div class="olcum">
+    <div class="ad">Elle girilen fiyat</div>
+    <div class="deger">31</div>
+    
+    
+    <div class="not">file · en eskisi 2026-07-30</div>
+    <div class="kaynak">kaynak: elle_fiyatlar.json</div></div><div class="olcum">
+    <div class="ad">Gönderilmemiş commit</div>
+    <div class="deger">0</div>
+    
+    
+    <div class="not">son: 60defb9 · Bir gun cekilemeyen market listeden dusmesin</div>
+    <div class="kaynak">kaynak: git</div></div><div class="olcum">
+    <div class="ad">Sayfa sınaması<span class="tur ilerleme">ilerleme</span></div>
+    <div class="deger">16/16</div>
+    <div class="cubuk"><div style="width:100.0%"></div></div>
+    <div class="formul">Geçen kontrol ÷ çalıştırılan kontrol. node sinama.js şimdi çalıştırıldı, sonuç okundu — bu sayı elle yazılmıyor.</div>
+    <div class="not">hepsi geçti</div>
+    <div class="kaynak">kaynak: sinama.js</div></div><div class="olcum">
+    <div class="ad">Takip edilen ürün grubu</div>
+    <div class="deger">55</div>
+    
+    
+    <div class="not">181 arama kelimesi</div>
+    <div class="kaynak">kaynak: sepet.txt</div></div></div>
+  <div class="aciklama">
+    <b>ilerleme</b> = yapılan iş ÷ yapılacak iş; yüzde çubuğu sadece bunlarda var.
+    <b>kapsam</b> = elde olan ÷ hedeflenen; ilerleme değildir, o yüzden yüzdeye
+    çevrilmez. Bir ölçüm okunamazsa sayı uydurulmaz, “okunamadı” yazar.
+  </div>
+  <section class="bolum sirada">
+      <h2>Sırada <span class="adet">6</span></h2>
+      <div class="altbaslik">yapılacak, henüz başlanmadı</div>
+      <div class="kart"><div class="is sirada">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bekleyen commit&#39;leri gönderin<span class="rozet siz">sizde</span></div>
+      <div class="neden">Yayındaki site depodan besleniyor. Gönderilmeyen commit&#39;ler bilgisayarınızda kalır, siteye ve telefona yansımaz.</div>
+      <div class="kaynak"><code>GitHub Desktop → Push origin</code></div>
+    </div></div><div class="is sirada">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">File fiyatlarını tazeleyin<span class="rozet siz">sizde</span></div>
+      <div class="neden">File&#39;ın web mağazası olmadığı için fiyatları otomatik gelemiyor. Elle girilenler eskidikçe karşılaştırma yanıltıcı olur; markette beklediğinizden farklı fiyat görürsünüz.</div>
+      <div class="kaynak"><code>Uygulamadan ekran görüntüsü → /market-fiyat-cevir</code></div>
+    </div></div><div class="is sirada">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Nuhmar ve Başgimpa&#39;dan ilk fiyatlar<span class="rozet siz">sizde</span></div>
+      <div class="neden">Menüde tanımlılar ama hiç fiyat girilmedi. Fiyatı olmayan market karşılaştırmaya hiç girmiyor, yani şu an bu iki market sistemde yok sayılıyor.</div>
+      <div class="kaynak"><code>Sitedeki ✎ Elle sekmesi</code></div>
+    </div></div><div class="is sirada">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bizim Toptan sayfalaması<span class="rozet ben">bende</span></div>
+      <div class="neden">?page=N parametresi ilerlemiyor, her kategoriden sadece ilk sayfa geliyor. Doğru parametre bulunursa 276 üründen birkaç bine çıkar.</div>
+      <div class="kaynak"><code>bizimtoptan.py</code></div>
+    </div></div><div class="is sirada">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Sabahki iş atlanırsa yedek tetikleyici<span class="rozet ben">bende</span></div>
+      <div class="neden">31.07&#39;de GitHub&#39;ın zamanlanmış işi hiç çalışmadı; cron &#39;en iyi çaba&#39; ile işliyor, garanti vermiyor. Atlanan gün fiyatların bir gün eskimesi demek.</div>
+      <div class="kaynak"><code>.github/workflows/gunluk-fiyat.yml</code></div>
+    </div></div><div class="is sirada">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Diğer Bolu marketleri otomatikleşebilir mi<span class="rozet ben">bende</span></div>
+      <div class="neden">Adese, Seç Market, Soykan, Çetinkaya, Ekomini, Bol Avantaj elle giriliyor. Özdilek ve Bizim Toptan&#39;da olduğu gibi açık bir uç nokta varsa elle giriş yükü kalkar.</div>
+      <div class="kaynak"><code>elle_marketler.txt</code></div>
+    </div></div></div>
+    </section><section class="bolum karar">
+      <h2>Karar bekliyor <span class="adet">2</span></h2>
+      <div class="altbaslik">sizin cevabınızı bekleyenler</div>
+      <div class="kart"><div class="is karar">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bu panel siteye de konsun mu<span class="rozet siz">sizde</span></div>
+      <div class="neden">Şu an sadece OneDrive&#39;da; telefondan OneDrive uygulamasıyla açılır. docs/ klasörüne koyarsam GitHub Pages&#39;te herkese açık olur — proje notlarınız da görünür hale gelir. Karar sizin.</div>
+      <div class="kaynak"><code>node tools/build-isler.mjs --yayin</code></div>
+    </div></div><div class="is karar">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bir markete uğramanın maliyeti 25 TL doğru mu<span class="rozet siz">sizde</span></div>
+      <div class="neden">Sistem &#39;iki markete gitmeye değer mi&#39; kararını bu sayıyla veriyor. Yüksek tutarsanız sizi tek markete gönderir, düşük tutarsanız daha çok gezdirir. Yakıt ve zamanınızın gerçek karşılığı ne?</div>
+      <div class="kaynak"><code>rapor.ZIYARET_MALIYETI</code></div>
+    </div></div></div>
+    </section><section class="bolum not">
+      <h2>Açık kalan not <span class="adet">6</span></h2>
+      <div class="altbaslik">iş değil ama bilinmesi gereken</div>
+      <div class="kart"><div class="is not">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Özdilek&#39;in Bolu anahtarı market-bolu-store</div>
+      <div class="neden">Varsayılan mağaza market-gecit-store, o Bursa&#39;dır. Yanlış anahtarla çekilirse fiyatlar sessizce başka şehrin fiyatı olur — hata vermez, sadece yanlış olur.</div>
+      <div class="kaynak"><code>ozdilek.py</code></div>
+    </div></div><div class="is not">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bizim Toptan çoklu paketleri alınmıyor</div>
+      <div class="neden">Sitedeki çoklu paket fiyatları tutarsız (aynı ürünün biri 45 TL, diğeri 480 TL). Tutarsız veriyi almaktansa atlamak daha doğru; --coklu-dahil ile açılabilir.</div>
+      <div class="kaynak"><code>bizimtoptan.py</code></div>
+    </div></div><div class="is not">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Kodu göndermek siteyi güncellemez</div>
+      <div class="neden">Sayfayı GitHub Actions üretiyor. Push&#39;tan sonra site hemen değişmez; ya sabahki çalışmayı beklersiniz ya Actions sekmesinden elle tetiklersiniz.</div>
+      <div class="kaynak"><code>.github/workflows/gunluk-fiyat.yml</code></div>
+    </div></div><div class="is not">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Elle girilen fiyatlar commit edilmezse yayında görünmez</div>
+      <div class="neden">Elle fiyatlar elle_fiyatlar.json ile depoya taşınıyor. Girip commit etmezseniz sadece kendi bilgisayarınızda kalır, telefondaki sayfada çıkmaz.</div>
+      <div class="kaynak"><code>elle_fiyatlar.json</code></div>
+    </div></div><div class="is not">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">İstatistik grafikleri birkaç hafta sonra anlam kazanır</div>
+      <div class="neden">Zaman serisi 29.07&#39;de başladı. İki günlük veriyle çizilen grafik trend göstermez; yapılacak bir şey yok, beklemek var.</div>
+      <div class="kaynak"><code>gunluk_endeks tablosu</code></div>
+    </div></div><div class="is not">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">File otomatik çekimi denendi, vazgeçildi<span class="rozet tarih">07.30</span></div>
+      <div class="neden">Web mağazası yok, sadece mobil uygulama. API&#39;nin uç noktaları bilinmiyor; bulmak için telefonda trafik yakalamak gerekir ve sertifika sabitlemeye takılabilir. Elle giriş tercih edildi.</div>
+      <div class="kaynak"><code>DURUM.md</code></div>
+    </div></div></div>
+    </section><section class="bolum bitti">
+      <h2>Bitti <span class="adet">14</span></h2>
+      <div class="altbaslik">silinmiyor; neyin neden yapıldığı kalsın diye duruyor</div>
+      <div class="kart"><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Yapılacaklar paneli<span class="rozet ben">bende</span><span class="rozet tarih">08.01</span></div>
+      <div class="neden">Ne yapıldığını takip etmek için her seferinde DURUM.md okumak ya da &#39;durum ne&#39; diye sormak gerekiyordu. Panel tek bakışta cevap versin.</div>
+      <div class="kaynak"><code>tools/build-isler.mjs</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bir gün çekilemeyen market listeden düşmesin<span class="rozet ben">bende</span><span class="rozet tarih">07.31</span></div>
+      <div class="neden">Sayfa tek günün anlık görüntüsüydü; bir market o gün çekilemezse tamamen kayboluyordu ve nedeni görünmüyordu. Artık son bilinen fiyat 7 güne kadar kullanılıyor, tarihi her yerde yazıyor.</div>
+      <div class="kaynak"><code>rapor.GECMIS_GUN</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Sayfa sınaması<span class="rozet ben">bende</span><span class="rozet tarih">07.31</span></div>
+      <div class="neden">katalog.py&#39;deki bir değişiklik sayfayı sessizce bozabiliyordu: HTML üretilir, hata çıkmaz, ama sayfa açılınca boş kalır. Sınama üretilen HTML&#39;in kendi javascriptini çalıştırıp kontrol ediyor.</div>
+      <div class="kaynak"><code>sinama.js</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Ürün fotoğrafları<span class="rozet ben">bende</span><span class="rozet tarih">07.31</span></div>
+      <div class="neden">Yazıyla ürün ayırt etmek zor. Resimler indirilmiyor, marketlerin adresleri saklanıyor; varsayılan kapalı ki sayfa markette internetsiz de çalışsın.</div>
+      <div class="kaynak"><code>urun.resim</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bizim Toptan otomatik çekimi<span class="rozet ben">bende</span><span class="rozet tarih">07.30</span></div>
+      <div class="neden">Toptancı fiyatları perakendeden ucuz olabiliyor; elle girmek yerine sitenin HTML&#39;ine gömülü veriden okunuyor.</div>
+      <div class="kaynak"><code>bizimtoptan.py</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Özdilek otomatik çekimi<span class="rozet ben">bende</span><span class="rozet tarih">07.30</span></div>
+      <div class="neden">Elle girmeye başlamıştınız, sayfa sayfa uğraşıyordunuz. Kendi API&#39;si açık çıktı; 9.992 ürün her gün kendiliğinden geliyor.</div>
+      <div class="kaynak"><code>ozdilek.py</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Toplu fiyat aktarma ve çevirme yeteneği<span class="rozet ben">bende</span><span class="rozet tarih">07.30</span></div>
+      <div class="neden">Elle fiyatı tek tek girmek çok yavaştı. Ekran görüntüsünü yapıştırıp içe aktarılabilir biçime çeviren bir yetenek eklendi.</div>
+      <div class="kaynak"><code>.claude/skills/market-fiyat-cevir</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">İstatistik sayfası<span class="rozet ben">bende</span><span class="rozet tarih">07.30</span></div>
+      <div class="neden">Hangi market genelde ucuz, hangi grupta fark büyük — tek tek ürüne bakmadan görebilmek için.</div>
+      <div class="kaynak"><code>katalog.py</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Elle fiyat girişi<span class="rozet ben">bende</span><span class="rozet tarih">07.29</span></div>
+      <div class="neden">Bolu&#39;daki zincirlerin çoğu hiçbir fiyat servisinde yok. Girdiğiniz fiyat tarihiyle saklanıyor ki eskiyeni fark edilsin.</div>
+      <div class="kaynak"><code>elle_fiyat tablosu</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Favoriler<span class="rozet ben">bende</span><span class="rozet tarih">07.29</span></div>
+      <div class="neden">Her alışverişte aynı ürünleri aramak zaman kaybıydı; düzenli aldıklarınız bir listede dursun, oradan sepete eklensin.</div>
+      <div class="kaynak"><code>katalog.py</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Alışveriş sitesi arayüzü<span class="rozet ben">bende</span><span class="rozet tarih">07.29</span></div>
+      <div class="neden">Rapor okumak yerine alışveriş yapar gibi sepet oluşturup &#39;hangi markete gideyim&#39; cevabını almak istediniz.</div>
+      <div class="kaynak"><code>Market-Sepet.html</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Günlük otomatik çekim<span class="rozet ben">bende</span><span class="rozet tarih">07.29</span></div>
+      <div class="neden">Bilgisayarı açık bırakmadan fiyatların tazelenmesi için; her sabah 10:00&#39;da GitHub&#39;ın makinesinde çalışıyor.</div>
+      <div class="kaynak"><code>.github/workflows/gunluk-fiyat.yml</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Aynı gramaj, farklı marka eşleştirmesi<span class="rozet ben">bende</span><span class="rozet tarih">07.29</span></div>
+      <div class="neden">Yumurtada 28 üründen 27&#39;si markete özel markaydı; &#39;aynı marka&#39; kuralı orada hiç çalışmıyordu. Boy ve nitelik tutmak şartıyla muadil aranıyor.</div>
+      <div class="kaynak"><code>rapor.py</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Tüm katalog çekimi<span class="rozet ben">bende</span><span class="rozet tarih">07.29</span></div>
+      <div class="neden">Sadece sepet listesindeki kelimelerle sınırlı kalınca aramada olmayan ürünler çıkmıyordu. Marka ağacı gezilerek katalog genişletildi.</div>
+      <div class="kaynak"><code>topla.py --hepsi</code></div>
+    </div></div></div>
+    </section>
+  <footer>
+    Bu dosya elle düzenlenmez. Kaynak <code>tools/isler.json</code>,
+    üretici <code>tools/build-isler.mjs</code>.<br>
+    Yenilemek için: <code>node tools/build-isler.mjs</code> —
+    saat başı kendiliğinden yenilensin isterseniz <code>tools/bekci.sh</code>.
+  </footer>
+</div>
+</body></html>
