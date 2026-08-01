@@ -72,16 +72,16 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
 
 <header><div class="kap">
   <h1>Yapılacaklar — Market Fiyat Bolu</h1>
-  <div class="alt">01.08.2026 19:38'de üretildi ·
+  <div class="alt">01.08.2026 20:03'de üretildi ·
     sayılar bu anda gerçek kaynaklardan okundu</div>
 </div></header>
 
 <div class="kap">
   <div class="olcumler"><div class="olcum">
     <div class="ad">Görev ilerlemesi<span class="tur ilerleme">ilerleme</span></div>
-    <div class="deger">64%</div>
-    <div class="cubuk"><div style="width:63.6%"></div></div>
-    <div class="formul">14 biten iş ÷ 22 toplam iş (biten + açık). &quot;Açık kalan not&quot; maddeleri iş sayılmadığı için paydada yok.</div>
+    <div class="deger">70%</div>
+    <div class="cubuk"><div style="width:69.6%"></div></div>
+    <div class="formul">16 biten iş ÷ 23 toplam iş (biten + açık). &quot;Açık kalan not&quot; maddeleri iş sayılmadığı için paydada yok.</div>
     
     <div class="kaynak">kaynak: tools/isler.json</div></div><div class="olcum">
     <div class="ad">Sizi bekleyen</div>
@@ -115,10 +115,10 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
     <div class="not">file · en eskisi 2026-07-30</div>
     <div class="kaynak">kaynak: elle_fiyatlar.json</div></div><div class="olcum">
     <div class="ad">Gönderilmemiş commit</div>
-    <div class="deger">0</div>
+    <div class="deger">1</div>
     
     
-    <div class="not">son: 60defb9 · Bir gun cekilemeyen market listeden dusmesin</div>
+    <div class="not">en üsttekі: 685d9ef · Yapilacaklar paneli — Push origin deyin</div>
     <div class="kaynak">kaynak: git</div></div><div class="olcum">
     <div class="ad">Sayfa sınaması<span class="tur ilerleme">ilerleme</span></div>
     <div class="deger">16/16</div>
@@ -138,7 +138,7 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
     çevrilmez. Bir ölçüm okunamazsa sayı uydurulmaz, “okunamadı” yazar.
   </div>
   <section class="bolum sirada">
-      <h2>Sırada <span class="adet">6</span></h2>
+      <h2>Sırada <span class="adet">5</span></h2>
       <div class="altbaslik">yapılacak, henüz başlanmadı</div>
       <div class="kart"><div class="is sirada">
     <div class="im"></div>
@@ -158,12 +158,6 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
       <div class="baslik">Nuhmar ve Başgimpa&#39;dan ilk fiyatlar<span class="rozet siz">sizde</span></div>
       <div class="neden">Menüde tanımlılar ama hiç fiyat girilmedi. Fiyatı olmayan market karşılaştırmaya hiç girmiyor, yani şu an bu iki market sistemde yok sayılıyor.</div>
       <div class="kaynak"><code>Sitedeki ✎ Elle sekmesi</code></div>
-    </div></div><div class="is sirada">
-    <div class="im"></div>
-    <div class="govde">
-      <div class="baslik">Bizim Toptan sayfalaması<span class="rozet ben">bende</span></div>
-      <div class="neden">?page=N parametresi ilerlemiyor, her kategoriden sadece ilk sayfa geliyor. Doğru parametre bulunursa 276 üründen birkaç bine çıkar.</div>
-      <div class="kaynak"><code>bizimtoptan.py</code></div>
     </div></div><div class="is sirada">
     <div class="im"></div>
     <div class="govde">
@@ -194,7 +188,7 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
       <div class="kaynak"><code>rapor.ZIYARET_MALIYETI</code></div>
     </div></div></div>
     </section><section class="bolum not">
-      <h2>Açık kalan not <span class="adet">6</span></h2>
+      <h2>Açık kalan not <span class="adet">7</span></h2>
       <div class="altbaslik">iş değil ama bilinmesi gereken</div>
       <div class="kart"><div class="is not">
     <div class="im"></div>
@@ -202,6 +196,12 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
       <div class="baslik">Özdilek&#39;in Bolu anahtarı market-bolu-store</div>
       <div class="neden">Varsayılan mağaza market-gecit-store, o Bursa&#39;dır. Yanlış anahtarla çekilirse fiyatlar sessizce başka şehrin fiyatı olur — hata vermez, sadece yanlış olur.</div>
       <div class="kaynak"><code>ozdilek.py</code></div>
+    </div></div><div class="is not">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bizim Toptan&#39;da her sayfada 7 ürünlük öneri şeridi tekrar ediyor</div>
+      <div class="neden">Sayfa başına 30 gerçek ürün var, üstüne her sayfada aynı 7 öneri geliyor. Toplayıcının &#39;yeni ürün yoksa dur&#39; kuralı bunu kendiliğinden yutuyor; ürün sayısını sayarken bu tekrarı hesaba katmayın.</div>
+      <div class="kaynak"><code>bizimtoptan.py</code></div>
     </div></div><div class="is not">
     <div class="im"></div>
     <div class="govde">
@@ -234,7 +234,7 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
       <div class="kaynak"><code>DURUM.md</code></div>
     </div></div></div>
     </section><section class="bolum bitti">
-      <h2>Bitti <span class="adet">14</span></h2>
+      <h2>Bitti <span class="adet">16</span></h2>
       <div class="altbaslik">silinmiyor; neyin neden yapıldığı kalsın diye duruyor</div>
       <div class="kart"><div class="is bitti">
     <div class="im"></div>
@@ -242,6 +242,18 @@ footer{font-size:11.5px;color:var(--soluk);margin:26px 0 34px;line-height:1.7}
       <div class="baslik">Yapılacaklar paneli<span class="rozet ben">bende</span><span class="rozet tarih">08.01</span></div>
       <div class="neden">Ne yapıldığını takip etmek için her seferinde DURUM.md okumak ya da &#39;durum ne&#39; diye sormak gerekiyordu. Panel tek bakışta cevap versin.</div>
       <div class="kaynak"><code>tools/build-isler.mjs</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bizim Toptan sayfalaması<span class="rozet ben">bende</span><span class="rozet tarih">08.01</span></div>
+      <div class="neden">Parametrenin adı page değil pagenumber&#39;mış; yanlış adla sunucu isteği sessizce yok sayıp hep ilk sayfayı döndürüyordu, o yüzden her kategoriden 30 ürün geliyordu. Doğru adı sayfanın kendi &lt;link rel=next&gt; etiketi söylüyor.</div>
+      <div class="kaynak"><code>bizimtoptan.py</code></div>
+    </div></div><div class="is bitti">
+    <div class="im"></div>
+    <div class="govde">
+      <div class="baslik">Bizim Toptan adresi çözülemediğinde yedek<span class="rozet ben">bende</span><span class="rozet tarih">08.01</span></div>
+      <div class="neden">İnternet sağlayıcınız bizimtoptan.com.tr&#39;yi çözemiyor, site ayakta olduğu halde toplayıcı bilgisayarınızda hiç çalışamıyordu. Yerel çözücü başarısız olursa adres Google&#39;ın DNS&#39;inden HTTPS ile soruluyor, sadece o sunucu adı için.</div>
+      <div class="kaynak"><code>bizimtoptan.py</code></div>
     </div></div><div class="is bitti">
     <div class="im"></div>
     <div class="govde">

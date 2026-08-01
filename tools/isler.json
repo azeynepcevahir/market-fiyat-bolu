@@ -40,10 +40,20 @@
 
     {
       "id": "bt-sayfalama",
-      "durum": "sirada",
+      "durum": "bitti",
       "kim": "ben",
       "baslik": "Bizim Toptan sayfalaması",
-      "neden": "?page=N parametresi ilerlemiyor, her kategoriden sadece ilk sayfa geliyor. Doğru parametre bulunursa 276 üründen birkaç bine çıkar.",
+      "neden": "Parametrenin adı page değil pagenumber'mış; yanlış adla sunucu isteği sessizce yok sayıp hep ilk sayfayı döndürüyordu, o yüzden her kategoriden 30 ürün geliyordu. Doğru adı sayfanın kendi <link rel=next> etiketi söylüyor.",
+      "tarih": "2026-08-01",
+      "kaynak": "bizimtoptan.py"
+    },
+    {
+      "id": "bt-dns",
+      "durum": "bitti",
+      "kim": "ben",
+      "baslik": "Bizim Toptan adresi çözülemediğinde yedek",
+      "neden": "İnternet sağlayıcınız bizimtoptan.com.tr'yi çözemiyor, site ayakta olduğu halde toplayıcı bilgisayarınızda hiç çalışamıyordu. Yerel çözücü başarısız olursa adres Google'ın DNS'inden HTTPS ile soruluyor, sadece o sunucu adı için.",
+      "tarih": "2026-08-01",
       "kaynak": "bizimtoptan.py"
     },
     {
@@ -86,6 +96,13 @@
       "baslik": "Özdilek'in Bolu anahtarı market-bolu-store",
       "neden": "Varsayılan mağaza market-gecit-store, o Bursa'dır. Yanlış anahtarla çekilirse fiyatlar sessizce başka şehrin fiyatı olur — hata vermez, sadece yanlış olur.",
       "kaynak": "ozdilek.py"
+    },
+    {
+      "id": "not-bt-serit",
+      "durum": "not",
+      "baslik": "Bizim Toptan'da her sayfada 7 ürünlük öneri şeridi tekrar ediyor",
+      "neden": "Sayfa başına 30 gerçek ürün var, üstüne her sayfada aynı 7 öneri geliyor. Toplayıcının 'yeni ürün yoksa dur' kuralı bunu kendiliğinden yutuyor; ürün sayısını sayarken bu tekrarı hesaba katmayın.",
+      "kaynak": "bizimtoptan.py"
     },
     {
       "id": "not-bt-coklu",

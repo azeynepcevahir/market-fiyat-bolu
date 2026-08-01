@@ -73,6 +73,69 @@ _RE_COKLU_PAKET = re.compile(
 )
 
 
+SUNUCU_ADI = KOK.split("//", 1)[1]
+
+# ---------------------------------------------------------------------------
+# AD COZME YEDEGI
+# ---------------------------------------------------------------------------
+# Bazi internet saglayicilari bizimtoptan.com.tr'yi cozemiyor (site Cloudflare
+# arkasinda ve ayakta; ayni anda 8.8.8.8 sorunsuz cozuyor). O durumda toplayici
+# hicbir sey cekemiyor. Yerel cozucu basarisiz olursa adresi Google'in DNS
+# sunucusundan HTTPS uzerinden soruyoruz ve SADECE bu sunucu adi icin
+# yonlendiriyoruz -- diger adresler normal yolundan gitmeye devam ediyor.
+#
+# 8.8.8.8'in sertifikasi kendi IP'sini de kapsadigi icin dogrulama kapatilmiyor.
+# GitHub Actions'ta bu yedege gerek olmuyor, orada ad normal cozuluyor.
+
+_yedek_kuruldu = [False]
+
+
+def _dns_sor(ad: str) -> list[str]:
+    for cozucu in ("8.8.8.8", "1.1.1.1"):
+        try:
+            istek = urllib.request.Request(
+                f"https://{cozucu}/resolve?name={ad}&type=A",
+                headers={"Accept": "application/dns-json", "User-Agent": TARAYICI_UA})
+            with urllib.request.urlopen(istek, timeout=15,
+                                        context=ssl.create_default_context()) as c:
+                veri = json.loads(c.read().decode("utf-8"))
+            adresler = [y["data"] for y in veri.get("Answer", []) if y.get("type") == 1]
+            if adresler:
+                return adresler
+        except Exception:              # noqa: BLE001,S110  -- sonraki cozucuyu dene
+            continue
+    return []
+
+
+def _dns_yedegini_kur() -> bool:
+    """Yerel cozucu bu sunucu adini bilmiyorsa disaridan ogrenip yerlestirir."""
+    if _yedek_kuruldu[0]:
+        return False                   # bir kez denendi, ikinci kez ugrasma
+    _yedek_kuruldu[0] = True
+
+    adresler = _dns_sor(SUNUCU_ADI)
+    if not adresler:
+        return False
+
+    import socket
+    asil = socket.getaddrinfo
+
+    def yamali(host, port, *a, **k):
+        if host == SUNUCU_ADI:
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (adresler[0], port))]
+        return asil(host, port, *a, **k)
+
+    socket.getaddrinfo = yamali
+    yaz(f"  (ad cozulemedi; {adresler[0]} adresi disaridan alindi)")
+    return True
+
+
+def _ad_cozme_hatasi(hata: Exception) -> bool:
+    import socket
+    return isinstance(getattr(hata, "reason", None), socket.gaierror) or \
+        isinstance(hata, socket.gaierror)
+
+
 def _istek(yol: str) -> str:
     url = yol if yol.startswith("http") else KOK + yol
     son_hata = None
@@ -93,6 +156,10 @@ def _istek(yol: str) -> str:
         except Exception as hata:      # noqa: BLE001
             _son_istek[0] = time.monotonic()
             son_hata = hata
+            # Ad cozulemediyse disaridan ogrenip ayni denemeyi tekrarla:
+            # bu bir ag hatasi degil, cozucu eksigi.
+            if _ad_cozme_hatasi(hata) and _dns_yedegini_kur():
+                continue
             if deneme < DENEME:
                 time.sleep(4 * deneme)
     raise RuntimeError(f"Bizim Toptan istegi basarisiz: {son_hata}")
@@ -198,7 +265,13 @@ def cek(istek_siniri: int | None = None, coklu_dahil: bool = False) -> dict:
         for sayfa in range(1, MAKS_SAYFA + 1):
             if istek_siniri and yazilan >= istek_siniri:
                 break
-            yol = f"/{kategori}" if sayfa == 1 else f"/{kategori}?page={sayfa}"
+            # Parametrenin adi "pagenumber" -- kucuk harf, bitisik. "page" ile
+            # sunucu istegi sessizce yok sayip HEP ilk sayfayi donduruyordu;
+            # asagidaki "yeni urun yok -> dur" kurali da haklı olarak ilk
+            # sayfadan sonra duruyordu. Kategori basina ~18 sayfa yerine 1
+            # sayfa cektigimiz sure boyunca hata gorunmedi, veri eksik geldi.
+            # Dogru adi sayfanin kendi <link rel="next"> etiketi soyluyor.
+            yol = f"/{kategori}" if sayfa == 1 else f"/{kategori}?pagenumber={sayfa}"
             try:
                 icerik = _istek(yol)
             except RuntimeError as hata:
@@ -207,8 +280,12 @@ def cek(istek_siniri: int | None = None, coklu_dahil: bool = False) -> dict:
 
             urunler = _sayfadaki_urunler(icerik)
             yeni = [u for u in urunler if u["kod"] and u["kod"] not in gorulen]
+            # Her sayfada 7 urunluk bir oneri seridi tekrar ediyor; sayfa
+            # basina 30 gercek urun var. "Yeni urun yok" olcutu bu tekrari
+            # kendiliginden yutuyor -- son sayfadan sonrasinda sadece serit
+            # kaldigi icin dongu orada duruyor.
             if not yeni:
-                break                      # sayfalar tekrar etmeye basladi
+                break
 
             urun_satirlari, fiyat_satirlari, kelime_satirlari = [], [], []
             for u in yeni:
